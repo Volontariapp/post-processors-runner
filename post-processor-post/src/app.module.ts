@@ -6,7 +6,10 @@ import { resolveConfigDirectory } from './config/resolve-config-directory.js';
 import { initDatabase } from './providers/database.provider.js';
 import { initRedis } from './providers/redis.provider.js';
 import { PostgresProvider, RedisProvider } from '@volontariapp/bridge';
-import { UserPostProcessor } from './post-processors/user.post-processor.js';
+import {
+  JobOutboxSuccessPostProcessor,
+  JobOutboxFailedPostProcessor,
+} from '@volontariapp/post-processors';
 import { PostProcessorOptions } from '@volontariapp/post-processors';
 
 const configDir = resolveConfigDirectory();
@@ -54,13 +57,38 @@ const logger = new Logger({
       inject: [CustomConfig],
     },
     {
-      provide: UserPostProcessor,
-      useFactory: (redisProvider: RedisProvider, options: PostProcessorOptions) => {
-        const postProcessor = new UserPostProcessor(redisProvider, options);
+      provide: JobOutboxSuccessPostProcessor,
+      useFactory: (
+        dbProvider: PostgresProvider,
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+      ) => {
+        const postProcessor = new JobOutboxSuccessPostProcessor(
+          dbProvider.getDriver(),
+          redisProvider.getDriver(),
+          options,
+        );
         void postProcessor.start();
         return postProcessor;
       },
-      inject: [RedisProvider, 'POST_PROCESSOR_OPTIONS'],
+      inject: [PostgresProvider, RedisProvider, 'POST_PROCESSOR_OPTIONS'],
+    },
+    {
+      provide: JobOutboxFailedPostProcessor,
+      useFactory: (
+        dbProvider: PostgresProvider,
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+      ) => {
+        const postProcessor = new JobOutboxFailedPostProcessor(
+          dbProvider.getDriver(),
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [PostgresProvider, RedisProvider, 'POST_PROCESSOR_OPTIONS'],
     },
   ],
 })

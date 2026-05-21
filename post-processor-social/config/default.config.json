@@ -18,7 +18,7 @@
     "password": "password",
     "db": 0
   },
-  "port": 4202,
+  "port": 4204,
   "postProcessor": {
     "groupName": "post-processor-social",
     "streamName": "stream:ms-social",

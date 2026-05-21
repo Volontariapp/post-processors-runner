@@ -18,7 +18,7 @@
     "password": "password",
     "db": 0
   },
-  "port": 4202,
+  "port": 4201,
   "postProcessor": {
     "groupName": "post-processor-user",
     "streamName": "stream:ms-user",

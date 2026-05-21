@@ -18,7 +18,7 @@
     "password": "password",
     "db": 0
   },
-  "port": 4202,
+  "port": 4203,
   "postProcessor": {
     "groupName": "post-processor-event",
     "streamName": "stream:ms-event",
