@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { IsDefined, IsNumber, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
 import { BaseConfig, PostgresConfig, RedisConfig } from '@volontariapp/config';
