@@ -1,0 +1,48 @@
+{
+  "name": "post-processor-event",
+  "version": "0.0.1",
+  "type": "module",
+  "private": true,
+  "packageManager": "yarn@4.12.0",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "start:local": "NODE_ENV=local tsx src/index.ts",
+    "start:dev": "NODE_ENV=development tsx src/index.ts",
+    "start:test": "NODE_ENV=test tsx src/index.ts",
+    "start:prod": "node dist/index.js",
+    "test": "jest",
+    "lint": "eslint \"src/**/*.ts\" --fix"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.0.1",
+    "@nestjs/core": "^11.0.1",
+    "@volontariapp/bridge": "^1.0.1",
+    "@volontariapp/config": "^3.1.0",
+    "@volontariapp/database": "^1.16.0",
+    "@volontariapp/eslint-config": "^2.2.3",
+    "@volontariapp/health-check": "^1.0.1",
+    "@volontariapp/logger": "^0.2.4",
+    "@volontariapp/messaging": "^2.0.0",
+    "@volontariapp/post-processors": "^1.0.2",
+    "class-transformer": "^0.5.1",
+    "ioredis": "^5.4.1",
+    "pg": "^8.20.0",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2",
+    "typeorm": "^0.3.29"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.7",
+    "@volontariapp/eslint-config": "^2.2.3",
+    "@volontariapp/testing": "^1.0.0",
+    "eslint": "^9.18.0",
+    "eslint-config-prettier": "^10.0.1",
+    "eslint-plugin-prettier": "^5.2.2",
+    "globals": "^16.0.0",
+    "prettier": "^3.4.2",
+    "tsx": "^4.21.0",
+    "typescript": "5.7.3",
+    "typescript-eslint": "^8.20.0"
+  }
+}

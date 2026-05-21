@@ -1,0 +1,31 @@
+{
+  "db": {
+    "host": "localhost",
+    "port": 5434,
+    "username": "user",
+    "password": "password",
+    "database": "ms_event",
+    "maxPoolSize": 10,
+    "ssl": false
+  },
+  "logger": {
+    "level": "info",
+    "format": "text"
+  },
+  "redis": {
+    "host": "localhost",
+    "port": 6379,
+    "password": "password",
+    "db": 0
+  },
+  "port": 4202,
+  "postProcessor": {
+    "groupName": "post-processor-event",
+    "streamName": "stream:ms-event",
+    "batchSize": 1,
+    "blockTimeout": 5000,
+    "idempotencyTtlSeconds": 86400,
+    "maxRetries": 3,
+    "retryDelayMs": 1000
+  }
+}
