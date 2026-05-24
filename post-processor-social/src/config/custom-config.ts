@@ -1,7 +1,11 @@
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { IsDefined, IsNumber, IsString, ValidateNested } from 'class-validator';
 import { Type } from 'class-transformer';
-import { BaseConfig, PostgresConfig, RedisConfig } from '@volontariapp/config';
+import {
+  BaseConfig,
+  PostgresConfig,
+  RedisConfig,
+  Neo4jConfig,
+} from '@volontariapp/config';
 
 export class PostProcessorConfig {
   @IsDefined()
@@ -48,4 +52,9 @@ export class CustomConfig extends BaseConfig {
   @ValidateNested()
   @Type(() => PostProcessorConfig)
   postProcessor!: PostProcessorConfig;
+
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => Neo4jConfig)
+  neo4j!: Neo4jConfig;
 }

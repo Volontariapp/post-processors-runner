@@ -4,32 +4,29 @@ import { loadConfig } from '@volontariapp/config';
 import { AppModule, logger } from './app.module.js';
 import { CustomConfig } from './config/custom-config.js';
 import { resolveConfigDirectory } from './config/resolve-config-directory.js';
-import { DiagnosticServer } from '@volontariapp/post-processors';
 
 async function bootstrap() {
-  logger.info('Bootstrapping NestJS standalone application context...');
+  const configDir = resolveConfigDirectory();
+  const config = loadConfig(configDir, CustomConfig);
+  const port = config.port;
 
-  const app = await NestFactory.createApplicationContext(AppModule, {
+  logger.info('Bootstrapping NestJS application...');
+
+  const app = await NestFactory.create(AppModule.register(config), {
     logger,
   });
 
   logger.info('NestJS Application Context successfully initialized and running.');
 
-  const configDir = resolveConfigDirectory();
-  const config = loadConfig(configDir, CustomConfig);
-  const port = config.port;
+  await app.listen(port);
 
-  const diagnosticServer = new DiagnosticServer(app, port);
-  diagnosticServer.start();
-
-  logger.info('Post-processor-user is now listening to user events', {
+  logger.info('Post-processor-post is now listening to events', {
     streamName: config.postProcessor.streamName,
     groupName: config.postProcessor.groupName,
   });
 
   const shutdown = async (signal: string) => {
-    logger.info(`${signal} received, closing Diagnostic server and NestJS context...`);
-    diagnosticServer.close();
+    logger.info(`${signal} received, closing NestJS context...`);
     await app.close();
     logger.info('Shutdown complete.');
     process.exit(0);

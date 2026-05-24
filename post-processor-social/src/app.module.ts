@@ -1,109 +1,31 @@
-import { Module, type OnApplicationShutdown, Inject } from '@nestjs/common';
-import { loadConfig } from '@volontariapp/config';
-import { Logger } from '@volontariapp/logger';
-import { CustomConfig } from './config/custom-config.js';
-import { resolveConfigDirectory } from './config/resolve-config-directory.js';
-import { initDatabase } from './providers/database.provider.js';
-import { initRedis } from './providers/redis.provider.js';
-import { PostgresProvider, RedisProvider } from '@volontariapp/bridge';
-import {
-  JobOutboxSuccessPostProcessor,
-  JobOutboxFailedPostProcessor,
-} from '@volontariapp/post-processors';
-import { PostProcessorOptions } from '@volontariapp/post-processors';
+import { Module, type DynamicModule } from '@nestjs/common';
+import { ConfigModule } from './config/config.module.js';
+import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
+import { DomainSocialModule } from './domain/domain-social.module.js';
+import { PostProcessorsModule } from './post-processors/post-processors.module.js';
+import { logger } from './config/config.module.js';
+import { HealthModule } from '@volontariapp/health-check-nest';
+import { TerminusModule } from '@nestjs/terminus';
+import type { CustomConfig } from './config/custom-config.js';
 
-const configDir = resolveConfigDirectory();
-const config = loadConfig(configDir, CustomConfig);
-const logger = new Logger({
-  context: 'POST-PROCESSOR-USER',
-  format: config.logger.format,
-});
-
-@Module({
-  providers: [
-    {
-      provide: CustomConfig,
-      useValue: config,
-    },
-    {
-      provide: Logger,
-      useValue: logger,
-    },
-    {
-      provide: PostgresProvider,
-      useFactory: async (customConfig: CustomConfig, log: Logger) => {
-        return initDatabase(customConfig.db, log);
-      },
-      inject: [CustomConfig, Logger],
-    },
-    {
-      provide: RedisProvider,
-      useFactory: async (customConfig: CustomConfig, log: Logger) => {
-        return initRedis(customConfig.redis, log);
-      },
-      inject: [CustomConfig, Logger],
-    },
-    {
-      provide: 'POST_PROCESSOR_OPTIONS',
-      useFactory: (customConfig: CustomConfig) => ({
-        groupName: customConfig.postProcessor.groupName,
-        streamName: customConfig.postProcessor.streamName,
-        batchSize: customConfig.postProcessor.batchSize,
-        blockTimeout: customConfig.postProcessor.blockTimeout,
-        idempotencyTtlSeconds: customConfig.postProcessor.idempotencyTtlSeconds,
-        maxRetries: customConfig.postProcessor.maxRetries,
-        retryDelayMs: customConfig.postProcessor.retryDelayMs,
-      }),
-      inject: [CustomConfig],
-    },
-    {
-      provide: JobOutboxSuccessPostProcessor,
-      useFactory: (
-        dbProvider: PostgresProvider,
-        redisProvider: RedisProvider,
-        options: PostProcessorOptions,
-      ) => {
-        const postProcessor = new JobOutboxSuccessPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
-          options,
-        );
-        void postProcessor.start();
-        return postProcessor;
-      },
-      inject: [PostgresProvider, RedisProvider, 'POST_PROCESSOR_OPTIONS'],
-    },
-    {
-      provide: JobOutboxFailedPostProcessor,
-      useFactory: (
-        dbProvider: PostgresProvider,
-        redisProvider: RedisProvider,
-        options: PostProcessorOptions,
-      ) => {
-        const postProcessor = new JobOutboxFailedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
-          options,
-        );
-        void postProcessor.start();
-        return postProcessor;
-      },
-      inject: [PostgresProvider, RedisProvider, 'POST_PROCESSOR_OPTIONS'],
-    },
-  ],
-})
-export class AppModule implements OnApplicationShutdown {
-  constructor(
-    @Inject(PostgresProvider) private readonly dbProvider: PostgresProvider,
-    @Inject(RedisProvider) private readonly redisProvider: RedisProvider,
-  ) {}
-
-  async onApplicationShutdown(signal?: string) {
-    logger.info(
-      `Shutdown signal received: ${signal ?? 'none'}. Closing background connection pools...`,
-    );
-    await Promise.all([this.dbProvider.disconnect(), this.redisProvider.disconnect()]);
-    logger.info('Database and Redis connection pools closed successfully.');
+@Module({})
+export class AppModule {
+  static register(config: CustomConfig): DynamicModule {
+    return {
+      module: AppModule,
+      imports: [
+        ConfigModule,
+        InfrastructureModule.forRoot(config),
+        TerminusModule.forRoot({}),
+        HealthModule.register({
+          databases: ['postgres', 'redis', 'neo4j'],
+          failOnMissingProvider: true,
+        }),
+        DomainSocialModule,
+        PostProcessorsModule,
+      ],
+    };
   }
 }
+
 export { logger };

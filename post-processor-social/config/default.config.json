@@ -8,6 +8,16 @@
     "maxPoolSize": 10,
     "ssl": false
   },
+  "neo4j": {
+    "scheme": "bolt",
+    "host": "localhost",
+    "port": 7687,
+    "username": "neo4j",
+    "password": "password",
+    "database": "neo4j",
+    "authScheme": "basic",
+    "realm": "neo4j"
+  },
   "logger": {
     "level": "info",
     "format": "text"
