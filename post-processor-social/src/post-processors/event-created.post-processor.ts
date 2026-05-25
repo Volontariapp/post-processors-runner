@@ -71,7 +71,7 @@ export class EventCreatedPostProcessor extends SinglePostProcessor<EventEventMes
       );
 
       this.logger.info(
-        'Inserting EVENT_CREATED into event_queue for ws:user stream',
+        'Inserting EVENT_CREATED into event_queue for ws:event stream',
         {
           messageId,
           eventId: event.id,
@@ -109,7 +109,7 @@ export class EventCreatedPostProcessor extends SinglePostProcessor<EventEventMes
             emitterId: event.emitterId,
             traceId: event.traceId,
             payload: payloadWsEvent,
-            targetServices: [Streams.WS_USER],
+            targetServices: [Streams.WS_EVENT],
           },
         );
 
