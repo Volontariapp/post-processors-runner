@@ -6,7 +6,7 @@ import { getEventStreamName } from '@volontariapp/messaging';
 export const userCreatedOptionsProvider = {
   provide: POST_PROCESSOR_USER_CREATED_OPTIONS,
   useFactory: (customConfig: CustomConfig) => ({
-    groupName: customConfig.postProcessor.groupName,
+    groupName: 'UserCreatedPostProcessors',
     streamName: getEventStreamName(Streams.SOCIAL_USER),
     batchSize: customConfig.postProcessor.batchSize,
     blockTimeout: customConfig.postProcessor.blockTimeout,

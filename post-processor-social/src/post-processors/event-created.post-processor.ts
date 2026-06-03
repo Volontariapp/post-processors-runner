@@ -4,11 +4,7 @@ import type {
   IEventPayload,
 } from '@volontariapp/messaging';
 import { Injectable } from '@nestjs/common';
-import {
-  ParticipationService,
-  EventId,
-  UserId,
-} from '@volontariapp/domain-social';
+import { ParticipationService } from '@volontariapp/domain-social';
 import type {
   BatchEventItem,
   PostProcessorOptions,
@@ -37,65 +33,68 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
   ): Promise<void> {
     const queueEntities: EventQueueEntity<WebsocketEventMessagingType.WS_EVENT_CREATED>[] =
       [];
+    const neo4jBatch: { eventId: string; organizerId: string }[] = [];
 
-    await Promise.all(
-      events.map(async ({ event, messageId }) => {
-        const payload: IEventPayload = event.payload.after;
+    events.forEach(({ event, messageId }) => {
+      const payload: IEventPayload = event.payload.after;
 
-        if (!payload.id || !payload.organizerId) {
-          this.logger.error(
-            'Invalid payload for EVENT_CREATED: missing id or organizerId',
-            {
-              messageId,
-              payload: event.payload,
-            },
-          );
-          return;
-        }
-        try {
-          await this.participationService.createEvent(new EventId(payload.id));
-          await this.participationService.setEventCreator(
-            new UserId(payload.organizerId),
-            new EventId(payload.id),
-          );
-
-          const payloadWsEvent: IEventCreatedWebsocketPayload = {
-            id: payload.id,
-            name: payload.name,
-            description: payload.description,
-            startAt: payload.startAt,
-            endAt: payload.endAt,
-            type: payload.type,
-            state: payload.state,
-            awardedImpactScore: payload.awardedImpactScore,
-            maxParticipants: payload.maxParticipants,
-            organizerId: payload.organizerId,
-            localisationName: payload.localisationName,
-            createdAt: payload.createdAt,
-            updatedAt: payload.updatedAt,
-          };
-
-          const queueEntity =
-            EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_EVENT_CREATED>(
-              {
-                type: WebsocketEventMessagingType.WS_EVENT_CREATED,
-                emitter: event.emitter,
-                emitterId: event.emitterId,
-                traceId: event.traceId,
-                payload: payloadWsEvent,
-                targetServices: [Streams.WS_EVENT],
-              },
-            );
-
-          queueEntities.push(queueEntity);
-        } catch (error) {
-          this.logger.error('Error processing EVENT_CREATED', error, {
+      if (!payload.id || !payload.organizerId) {
+        this.logger.error(
+          'Invalid payload for EVENT_CREATED: missing id or organizerId',
+          {
             messageId,
             payload: event.payload,
-          });
-        }
-      }),
-    );
+          },
+        );
+        return;
+      }
+
+      neo4jBatch.push({
+        eventId: payload.id,
+        organizerId: payload.organizerId,
+      });
+
+      const payloadWsEvent: IEventCreatedWebsocketPayload = {
+        id: payload.id,
+        name: payload.name,
+        description: payload.description,
+        startAt: payload.startAt,
+        endAt: payload.endAt,
+        type: payload.type,
+        state: payload.state,
+        awardedImpactScore: payload.awardedImpactScore,
+        maxParticipants: payload.maxParticipants,
+        organizerId: payload.organizerId,
+        localisationName: payload.localisationName,
+        createdAt: payload.createdAt,
+        updatedAt: payload.updatedAt,
+      };
+
+      const queueEntity =
+        EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_EVENT_CREATED>(
+          {
+            type: WebsocketEventMessagingType.WS_EVENT_CREATED,
+            emitter: event.emitter,
+            emitterId: event.emitterId,
+            traceId: event.traceId,
+            payload: payloadWsEvent,
+            targetServices: [Streams.WS_EVENT],
+          },
+        );
+
+      queueEntities.push(queueEntity);
+    });
+
+    if (neo4jBatch.length > 0) {
+      try {
+        await this.participationService.createEventsBatch(neo4jBatch);
+      } catch (error) {
+        this.logger.error(
+          'Error processing EVENT_CREATED batch in Neo4j',
+          error,
+        );
+      }
+    }
 
     if (queueEntities.length > 0) {
       try {
