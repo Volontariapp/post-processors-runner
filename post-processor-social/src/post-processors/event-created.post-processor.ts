@@ -1,8 +1,7 @@
-import { SinglePostProcessor } from '@volontariapp/post-processors';
+import { BatchPostProcessor } from '@volontariapp/post-processors';
 import type {
   IEventCreatedWebsocketPayload,
   IEventPayload,
-  StreamEvent,
 } from '@volontariapp/messaging';
 import { Injectable } from '@nestjs/common';
 import {
@@ -10,7 +9,10 @@ import {
   EventId,
   UserId,
 } from '@volontariapp/domain-social';
-import type { PostProcessorOptions } from '@volontariapp/post-processors';
+import type {
+  BatchEventItem,
+  PostProcessorOptions,
+} from '@volontariapp/post-processors';
 import type { Redis } from 'ioredis';
 import {
   EventEventMessagingType,
@@ -29,7 +31,96 @@ import { EventQueueWriter, EventQueueRepository } from '@volontariapp/outbox';
 databaseMapper.registerBidirectional(EventQueueModel, EventQueueEntity);
 
 @Injectable()
-export class EventCreatedPostProcessor extends SinglePostProcessor<EventEventMessagingType.EVENT_CREATED> {
+export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMessagingType.EVENT_CREATED> {
+  protected async processEvents(
+    events: BatchEventItem<EventEventMessagingType.EVENT_CREATED>[],
+  ): Promise<void> {
+    const queueEntities: EventQueueEntity<WebsocketEventMessagingType.WS_EVENT_CREATED>[] =
+      [];
+
+    await Promise.all(
+      events.map(async ({ event, messageId }) => {
+        const payload: IEventPayload = event.payload.after;
+
+        if (!payload.id || !payload.organizerId) {
+          this.logger.error(
+            'Invalid payload for EVENT_CREATED: missing id or organizerId',
+            {
+              messageId,
+              payload: event.payload,
+            },
+          );
+          return;
+        }
+        try {
+          await this.participationService.createEvent(new EventId(payload.id));
+          await this.participationService.setEventCreator(
+            new UserId(payload.organizerId),
+            new EventId(payload.id),
+          );
+
+          const payloadWsEvent: IEventCreatedWebsocketPayload = {
+            id: payload.id,
+            name: payload.name,
+            description: payload.description,
+            startAt: payload.startAt,
+            endAt: payload.endAt,
+            type: payload.type,
+            state: payload.state,
+            awardedImpactScore: payload.awardedImpactScore,
+            maxParticipants: payload.maxParticipants,
+            organizerId: payload.organizerId,
+            localisationName: payload.localisationName,
+            createdAt: payload.createdAt,
+            updatedAt: payload.updatedAt,
+          };
+
+          const queueEntity =
+            EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_EVENT_CREATED>(
+              {
+                type: WebsocketEventMessagingType.WS_EVENT_CREATED,
+                emitter: event.emitter,
+                emitterId: event.emitterId,
+                traceId: event.traceId,
+                payload: payloadWsEvent,
+                targetServices: [Streams.WS_EVENT],
+              },
+            );
+
+          queueEntities.push(queueEntity);
+        } catch (error) {
+          this.logger.error('Error processing EVENT_CREATED', error, {
+            messageId,
+            payload: event.payload,
+          });
+        }
+      }),
+    );
+
+    if (queueEntities.length > 0) {
+      try {
+        const eventQueueWriter =
+          new EventQueueWriter<WebsocketEventMessagingType.WS_EVENT_CREATED>(
+            this.logger,
+            new EventQueueRepository<WebsocketEventMessagingType.WS_EVENT_CREATED>(
+              this.typeormRepository,
+            ),
+          );
+
+        this.logger.info(
+          `Inserting ${String(queueEntities.length)} EVENT_CREATED into event_queue for ws:event stream`,
+        );
+
+        await eventQueueWriter.createMany(queueEntities);
+      } catch (error) {
+        this.logger.error(
+          'Error batch inserting EVENT_CREATED into event_queue',
+          error,
+        );
+      }
+    }
+  }
+
   constructor(
     redisClient: Redis,
     options: PostProcessorOptions,
@@ -44,81 +135,5 @@ export class EventCreatedPostProcessor extends SinglePostProcessor<EventEventMes
     eventType: EventEventMessagingType | string,
   ): boolean {
     return eventType === EventEventMessagingType.EVENT_CREATED.toString();
-  }
-
-  protected async processEvent(
-    event: StreamEvent<IEventPayload>,
-    messageId: string,
-  ): Promise<void> {
-    const payload: IEventPayload = event.payload.after;
-
-    if (!payload.id || !payload.organizerId) {
-      this.logger.error(
-        'Invalid payload for EVENT_CREATED: missing id or organizerId',
-        {
-          messageId,
-          payload: event.payload,
-        },
-      );
-      return;
-    }
-    this.logger.info('Processing EVENT_CREATED: ' + JSON.stringify(payload));
-    try {
-      await this.participationService.createEvent(new EventId(payload.id));
-      await this.participationService.setEventCreator(
-        new UserId(payload.organizerId),
-        new EventId(payload.id),
-      );
-
-      this.logger.info(
-        'Inserting EVENT_CREATED into event_queue for ws:event stream',
-        {
-          messageId,
-          eventId: event.id,
-          emitterId: event.emitterId,
-        },
-      );
-      const payloadWsEvent: IEventCreatedWebsocketPayload = {
-        id: payload.id,
-        name: payload.name,
-        description: payload.description,
-        startAt: payload.startAt,
-        endAt: payload.endAt,
-        type: payload.type,
-        state: payload.state,
-        awardedImpactScore: payload.awardedImpactScore,
-        maxParticipants: payload.maxParticipants,
-        organizerId: payload.organizerId,
-        localisationName: payload.localisationName,
-        createdAt: payload.createdAt,
-        updatedAt: payload.updatedAt,
-      };
-      const eventQueueWriter =
-        new EventQueueWriter<WebsocketEventMessagingType.WS_EVENT_CREATED>(
-          this.logger,
-          new EventQueueRepository<WebsocketEventMessagingType.WS_EVENT_CREATED>(
-            this.typeormRepository,
-          ),
-        );
-
-      const queueEntity =
-        EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_EVENT_CREATED>(
-          {
-            type: WebsocketEventMessagingType.WS_EVENT_CREATED,
-            emitter: event.emitter,
-            emitterId: event.emitterId,
-            traceId: event.traceId,
-            payload: payloadWsEvent,
-            targetServices: [Streams.WS_EVENT],
-          },
-        );
-
-      await eventQueueWriter.create(queueEntity);
-    } catch (error) {
-      this.logger.error('Error processing EVENT_CREATED', error, {
-        messageId,
-        payload: event.payload,
-      });
-    }
   }
 }
