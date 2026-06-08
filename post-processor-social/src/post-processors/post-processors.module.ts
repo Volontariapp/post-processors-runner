@@ -12,11 +12,16 @@ import {
 } from '@volontariapp/post-processors';
 import { EventCreatedPostProcessor } from './event-created.post-processor.js';
 import { UserCreatedPostProcessor } from './user-created.post-processor.js';
+import { PostCreatedPostProcessor } from './post-created.post-processor.js';
+import { PostDeletedPostProcessor } from './post-deleted.post-processor.js';
 import { getRepositoryToken, TypeOrmModule } from '@nestjs/typeorm';
 import { EventQueueModel } from '@volontariapp/database';
 import { Repository } from 'typeorm';
 import { DomainSocialModule } from '../domain/domain-social.module.js';
-import { SocialUserService } from '@volontariapp/domain-social';
+import {
+  SocialUserService,
+  PublicationService,
+} from '@volontariapp/domain-social';
 import {
   postProcessorsJobOutboxFailureOptionsProvider,
   postProcessorsJobOutboxSuccessOptionsProvider,
@@ -26,6 +31,10 @@ import {
   POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
   POST_PROCESSOR_EVENT_CREATED_OPTIONS,
   POST_PROCESSOR_USER_CREATED_OPTIONS,
+  POST_PROCESSOR_POST_CREATED_OPTIONS,
+  POST_PROCESSOR_POST_DELETED_OPTIONS,
+  postCreatedOptionsProvider,
+  postDeletedOptionsProvider,
 } from './options/index.js';
 @Module({
   imports: [DomainSocialModule, TypeOrmModule.forFeature([EventQueueModel])],
@@ -34,6 +43,8 @@ import {
     postProcessorsJobOutboxFailureOptionsProvider,
     eventCreatedOptionsProvider,
     userCreatedOptionsProvider,
+    postCreatedOptionsProvider,
+    postDeletedOptionsProvider,
     {
       provide: JobOutboxSuccessPostProcessor,
       useFactory: async (
@@ -127,6 +138,56 @@ import {
         NestRedisProvider,
         POST_PROCESSOR_USER_CREATED_OPTIONS,
         SocialUserService,
+        getRepositoryToken(EventQueueModel),
+      ],
+    },
+    {
+      provide: PostCreatedPostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+        publicationService: PublicationService,
+        typeormRepository: Repository<EventQueueModel>,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new PostCreatedPostProcessor(
+          redisProvider.getDriver(),
+          options,
+          publicationService,
+          typeormRepository,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        POST_PROCESSOR_POST_CREATED_OPTIONS,
+        PublicationService,
+        getRepositoryToken(EventQueueModel),
+      ],
+    },
+    {
+      provide: PostDeletedPostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+        publicationService: PublicationService,
+        typeormRepository: Repository<EventQueueModel>,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new PostDeletedPostProcessor(
+          redisProvider.getDriver(),
+          options,
+          publicationService,
+          typeormRepository,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        POST_PROCESSOR_POST_DELETED_OPTIONS,
+        PublicationService,
         getRepositoryToken(EventQueueModel),
       ],
     },

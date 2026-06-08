@@ -68,6 +68,7 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
         localisationName: payload.localisationName,
         createdAt: payload.createdAt,
         updatedAt: payload.updatedAt,
+        eventLocation: payload.eventLocation,
       };
 
       const queueEntity =
