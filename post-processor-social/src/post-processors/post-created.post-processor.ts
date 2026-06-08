@@ -4,6 +4,7 @@ import {
   PublicationService,
   PostId,
   UserId,
+  EventId,
 } from '@volontariapp/domain-social';
 import type {
   BatchEventItem,
@@ -36,8 +37,11 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
   protected async processEvents(
     events: BatchEventItem<PostEventMessagingType.POST_CREATED>[],
   ): Promise<void> {
-    const postIds: PostId[] = [];
-    const ownershipPairs: { userId: UserId; postId: PostId }[] = [];
+    const creationPairs: {
+      userId: UserId;
+      postId: PostId;
+      eventId?: EventId;
+    }[] = [];
     const validEvents: BatchEventItem<PostEventMessagingType.POST_CREATED>[] =
       [];
 
@@ -66,20 +70,31 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
 
       const postId = new PostId(payload.id);
       const userId = new UserId(event.emitterId);
+      const eventId = payload.eventId
+        ? new EventId(payload.eventId)
+        : undefined;
 
-      postIds.push(postId);
-      ownershipPairs.push({ userId, postId });
+      creationPairs.push({ userId, postId, eventId });
       validEvents.push(item);
     }
 
-    if (postIds.length === 0) return;
+    if (creationPairs.length === 0) return;
 
     try {
       this.logger.info(
-        `Batch processing ${String(postIds.length)} POST_CREATED events...`,
+        `Batch processing ${String(creationPairs.length)} POST_CREATED events...`,
       );
-      await this.publicationService.createPosts(postIds);
-      await this.publicationService.ownPosts(ownershipPairs);
+      const { invalidEventIds } =
+        await this.publicationService.createAndLinkPosts(creationPairs);
+
+      if (invalidEventIds.length > 0) {
+        this.logger.warn(
+          `Found ${String(invalidEventIds.length)} invalid event IDs during graph creation`,
+          { invalidEventIds },
+        );
+        // NOTE: we just log here because the post-processor doesn't need to fail the entire batch or post creation, just warn about bad eventId.
+      }
+
       this.logger.info('Successfully batch processed POST_CREATED events');
     } catch (error) {
       this.logger.error('Error processing batch of POST_CREATED events', error);
