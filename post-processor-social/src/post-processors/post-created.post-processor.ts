@@ -77,7 +77,6 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
       creationPairs.push({ userId, postId, eventId });
       validEvents.push(item);
     }
-
     if (creationPairs.length === 0) return;
 
     try {
@@ -93,6 +92,7 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
           { invalidEventIds },
         );
         // NOTE: we just log here because the post-processor doesn't need to fail the entire batch or post creation, just warn about bad eventId.
+        // TODO: Clement peut etre tu peux gerer ce cas pour notifier le front-end ou je sais pas
       }
 
       this.logger.info('Successfully batch processed POST_CREATED events');
