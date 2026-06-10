@@ -12,14 +12,18 @@ import {
 import {
   postProcessorsJobOutboxFailureOptionsProvider,
   postProcessorsJobOutboxSuccessOptionsProvider,
+  postProcessorsEventCreatedOptionsProvider,
   POST_PROCESSORS_JOB_OUTBOX_SUCCESS_OPTIONS,
   POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
+  POST_PROCESSORS_EVENT_CREATED_OPTIONS,
 } from './options/index.js';
+import { EventCreatedPostProcessor } from './event-created.post-processor.js';
 
 @Module({
   providers: [
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
+    postProcessorsEventCreatedOptionsProvider,
     {
       provide: JobOutboxSuccessPostProcessor,
       useFactory: async (
@@ -64,6 +68,29 @@ import {
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
+      ],
+    },
+    {
+      provide: EventCreatedPostProcessor,
+      useFactory: async (
+        dbProvider: PostgresProvider,
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+      ) => {
+        await dbProvider.connect();
+        await redisProvider.connect();
+        const postProcessor = new EventCreatedPostProcessor(
+          dbProvider.getDriver(),
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestPostgresProvider,
+        NestRedisProvider,
+        POST_PROCESSORS_EVENT_CREATED_OPTIONS,
       ],
     },
   ],

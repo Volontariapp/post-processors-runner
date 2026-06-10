@@ -10,10 +10,10 @@ import {
   JobOutboxFailedPostProcessor,
   PostProcessorOptions,
 } from '@volontariapp/post-processors';
-import { EventCreatedPostProcessor } from './event-created.post-processor.js';
-import { UserCreatedPostProcessor } from './user-created.post-processor.js';
-import { PostCreatedPostProcessor } from './post-created.post-processor.js';
-import { PostDeletedPostProcessor } from './post-deleted.post-processor.js';
+import { EventCreatedPostProcessor } from './events/event-created.post-processor.js';
+import { UserCreatedPostProcessor } from './users/user-created.post-processor.js';
+import { PostCreatedPostProcessor } from './posts/post-created.post-processor.js';
+import { PostDeletedPostProcessor } from './posts/post-deleted.post-processor.js';
 import { getRepositoryToken, TypeOrmModule } from '@nestjs/typeorm';
 import { EventQueueModel } from '@volontariapp/database';
 import { Repository } from 'typeorm';

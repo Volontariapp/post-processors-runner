@@ -13,6 +13,18 @@ import {
 } from '@volontariapp/bridge-nest';
 import { PostgresProvider, RedisProvider } from '@volontariapp/bridge';
 import { CustomConfig } from '../config/custom-config.js';
+import { AppDataSource } from '../config/data-source.js';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import {
+  EventModel,
+  TagModel,
+  RequirementModel,
+} from '@volontariapp/domain-event';
+import {
+  EventQueueModel,
+  JobsOutboxModel,
+  JobAuditModel,
+} from '@volontariapp/database';
 import { Logger } from '@volontariapp/logger';
 
 @Global()
@@ -25,13 +37,45 @@ export class InfrastructureModule implements OnApplicationShutdown {
   ) {}
 
   static forRoot(config: CustomConfig): DynamicModule {
+    const entities = AppDataSource.options.entities;
+
     return {
       module: InfrastructureModule,
       imports: [
-        PostgresBridgeModule.register(config.db),
+        PostgresBridgeModule.register({
+          host: config.db.host,
+          port: config.db.port,
+          username: config.db.username,
+          password: config.db.password,
+          database: config.db.database,
+          ssl: config.db.ssl ? { rejectUnauthorized: false } : false,
+          entities,
+          migrations: AppDataSource.options.migrations,
+          synchronize: false,
+        }),
+        TypeOrmModule.forRoot({
+          type: 'postgres',
+          host: config.db.host,
+          port: config.db.port,
+          username: config.db.username,
+          password: config.db.password,
+          database: config.db.database,
+          ssl: config.db.ssl ? { rejectUnauthorized: false } : false,
+          entities,
+          migrations: AppDataSource.options.migrations,
+          synchronize: false,
+        }),
+        TypeOrmModule.forFeature([
+          EventModel,
+          TagModel,
+          RequirementModel,
+          EventQueueModel,
+          JobsOutboxModel,
+          JobAuditModel,
+        ]),
         RedisBridgeModule.register(config.redis),
       ],
-      exports: [PostgresBridgeModule, RedisBridgeModule],
+      exports: [PostgresBridgeModule, RedisBridgeModule, TypeOrmModule],
     };
   }
 

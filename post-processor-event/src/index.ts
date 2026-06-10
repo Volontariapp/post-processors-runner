@@ -16,7 +16,9 @@ async function bootstrap() {
     logger,
   });
 
-  logger.info('NestJS Application Context successfully initialized and running.');
+  logger.info(
+    'NestJS Application Context successfully initialized and running.',
+  );
 
   await app.listen(port);
 

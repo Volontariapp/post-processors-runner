@@ -9,11 +9,11 @@ import type {
 import type { Redis } from 'ioredis';
 import {
   PostEventMessagingType,
-  WebsocketEventMessagingType,
   type IPostDeletedPayload,
   type IPostDeletedWebsocketPayload,
   type IPostDeletionFailedWebsocketPayload,
   type StreamEvent,
+  SocialEventMessagingType,
 } from '@volontariapp/messaging';
 import {
   databaseMapper,
@@ -40,15 +40,15 @@ export class PostDeletedPostProcessor extends BatchPostProcessor<PostEventMessag
       const { event, messageId } = item;
       const payload: IPostDeletedPayload = event.payload.after;
 
-      if (!payload.id) {
-        this.logger.error('Invalid payload for POST_DELETED: missing id', {
+      if (!payload.postId) {
+        this.logger.error('Invalid payload for POST_DELETED: missing postId', {
           messageId,
           payload: event.payload,
         });
         continue;
       }
 
-      postIds.push(new PostId(payload.id));
+      postIds.push(new PostId(payload.postId));
       validEvents.push(item);
     }
 
@@ -65,17 +65,19 @@ export class PostDeletedPostProcessor extends BatchPostProcessor<PostEventMessag
       throw error;
     }
 
-    const queueEntities: EventQueueEntity<WebsocketEventMessagingType.WS_POST_DELETED>[] =
+    const queueEntities: EventQueueEntity<SocialEventMessagingType.POST_SOCIAL_DELETED>[] =
       [];
 
     for (const { event } of validEvents) {
       const payload: IPostDeletedPayload = event.payload.after;
 
-      const payloadWsEvent: IPostDeletedWebsocketPayload = { id: payload.id };
+      const payloadWsEvent: IPostDeletedWebsocketPayload = {
+        postId: payload.postId,
+      };
       queueEntities.push(
-        EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_POST_DELETED>(
+        EventQueueEntity.createEvent<SocialEventMessagingType.POST_SOCIAL_DELETED>(
           {
-            type: WebsocketEventMessagingType.WS_POST_DELETED,
+            type: SocialEventMessagingType.POST_SOCIAL_DELETED,
             emitter: event.emitter,
             emitterId: event.emitterId,
             traceId: event.traceId,
@@ -90,7 +92,7 @@ export class PostDeletedPostProcessor extends BatchPostProcessor<PostEventMessag
     if (queueEntities.length > 0) {
       try {
         const repo =
-          new EventQueueRepository<WebsocketEventMessagingType.WS_POST_DELETED>(
+          new EventQueueRepository<SocialEventMessagingType.POST_SOCIAL_DELETED>(
             this.typeormRepository,
           );
         const eventQueueWriter = new EventQueueWriter(this.logger, repo);
@@ -131,12 +133,12 @@ export class PostDeletedPostProcessor extends BatchPostProcessor<PostEventMessag
       const payload: IPostDeletedPayload = event.payload.after;
 
       const payloadWsEvent: IPostDeletionFailedWebsocketPayload = {
-        id: payload.id,
+        postId: payload.postId,
       };
       const queueEntity =
-        EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_POST_DELETION_FAILED>(
+        EventQueueEntity.createEvent<SocialEventMessagingType.POST_SOCIAL_DELETION_FAILED>(
           {
-            type: WebsocketEventMessagingType.WS_POST_DELETION_FAILED,
+            type: SocialEventMessagingType.POST_SOCIAL_DELETION_FAILED,
             emitter: event.emitter,
             emitterId: event.emitterId,
             traceId: event.traceId,
@@ -147,7 +149,7 @@ export class PostDeletedPostProcessor extends BatchPostProcessor<PostEventMessag
         );
 
       const repo =
-        new EventQueueRepository<WebsocketEventMessagingType.WS_POST_DELETION_FAILED>(
+        new EventQueueRepository<SocialEventMessagingType.POST_SOCIAL_DELETION_FAILED>(
           this.typeormRepository,
         );
       const eventQueueWriter = new EventQueueWriter(this.logger, repo);

@@ -8,9 +8,9 @@ import type {
 import type { Redis } from 'ioredis';
 import {
   UserEventMessagingType,
-  WebsocketEventMessagingType,
-  type IUserCreatedPayload,
-  type IUserCreatedWebsocketPayload,
+  SocialEventMessagingType,
+  IUserCreatedPayload,
+  IUserSocialCreatedPayload,
 } from '@volontariapp/messaging';
 import {
   databaseMapper,
@@ -29,7 +29,7 @@ export class UserCreatedPostProcessor extends BatchPostProcessor<UserEventMessag
   protected async processEvents(
     events: BatchEventItem<UserEventMessagingType.USER_CREATED>[],
   ): Promise<void> {
-    const queueEntities: EventQueueEntity<WebsocketEventMessagingType.WS_USER_CREATED>[] =
+    const queueEntities: EventQueueEntity<SocialEventMessagingType.USER_SOCIAL_CREATED>[] =
       [];
 
     await Promise.all(
@@ -51,20 +51,19 @@ export class UserCreatedPostProcessor extends BatchPostProcessor<UserEventMessag
             userId: payload.id,
           });
 
-          const payloadWsEvent: IUserCreatedWebsocketPayload = {
-            id: payload.id,
-            role: payload.role,
+          const payloadSocialEvent: IUserSocialCreatedPayload = {
+            userId: payload.id,
           };
 
           const queueEntity =
-            EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_USER_CREATED>(
+            EventQueueEntity.createEvent<SocialEventMessagingType.USER_SOCIAL_CREATED>(
               {
-                type: WebsocketEventMessagingType.WS_USER_CREATED,
+                type: SocialEventMessagingType.USER_SOCIAL_CREATED,
                 emitter: event.emitter,
                 emitterId: event.emitterId,
                 traceId: event.traceId,
-                payload: payloadWsEvent,
-                targetServices: [Streams.WS_USER],
+                payload: payloadSocialEvent,
+                targetServices: [Streams.WS_USER_CREATED_FEEDBACK],
               },
             );
 
@@ -81,9 +80,9 @@ export class UserCreatedPostProcessor extends BatchPostProcessor<UserEventMessag
     if (queueEntities.length > 0) {
       try {
         const eventQueueWriter =
-          new EventQueueWriter<WebsocketEventMessagingType.WS_USER_CREATED>(
+          new EventQueueWriter<SocialEventMessagingType.USER_SOCIAL_CREATED>(
             this.logger,
-            new EventQueueRepository<WebsocketEventMessagingType.WS_USER_CREATED>(
+            new EventQueueRepository<SocialEventMessagingType.USER_SOCIAL_CREATED>(
               this.typeormRepository,
             ),
           );

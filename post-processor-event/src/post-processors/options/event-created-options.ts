@@ -1,13 +1,13 @@
-import { CustomConfig } from '../../config/custom-config.js';
-import { Streams } from '@volontariapp/shared';
-import { POST_PROCESSOR_EVENT_CREATED_OPTIONS } from './constants.js';
 import { getEventStreamName } from '@volontariapp/messaging';
+import { CustomConfig } from '../../config/custom-config.js';
+import { POST_PROCESSORS_EVENT_CREATED_OPTIONS } from './constants.js';
+import { Streams } from '@volontariapp/shared';
 
-export const eventCreatedOptionsProvider = {
-  provide: POST_PROCESSOR_EVENT_CREATED_OPTIONS,
+export const postProcessorsEventCreatedOptionsProvider = {
+  provide: POST_PROCESSORS_EVENT_CREATED_OPTIONS,
   useFactory: (customConfig: CustomConfig) => ({
-    groupName: 'PostProcessorSocialGroup',
-    streamName: getEventStreamName(Streams.SOCIAL_INTERACTIONS),
+    groupName: customConfig.postProcessor.groupName,
+    streamName: getEventStreamName(Streams.EVENT_CREATED),
     batchSize: customConfig.postProcessor.batchSize,
     blockTimeout: customConfig.postProcessor.blockTimeout,
     idempotencyTtlSeconds: customConfig.postProcessor.idempotencyTtlSeconds,

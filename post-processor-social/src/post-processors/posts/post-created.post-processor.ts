@@ -14,11 +14,10 @@ import type {
 import type { Redis } from 'ioredis';
 import {
   PostEventMessagingType,
-  WebsocketEventMessagingType,
   type IPostCreatedPayload,
-  type IPostCreatedWebsocketPayload,
-  type IPostCreationFailedWebsocketPayload,
   StreamEvent,
+  SocialEventMessagingType,
+  IPostSocialCreatedPayload,
 } from '@volontariapp/messaging';
 import {
   databaseMapper,
@@ -49,7 +48,7 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
       const { event, messageId } = item;
       const payload: IPostCreatedPayload = event.payload.after;
 
-      if (!payload.id) {
+      if (!payload.postId) {
         this.logger.error('Invalid payload for POST_CREATED: missing id', {
           messageId,
           payload: event.payload,
@@ -68,7 +67,7 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
         continue;
       }
 
-      const postId = new PostId(payload.id);
+      const postId = new PostId(payload.postId);
       const userId = new UserId(event.emitterId);
       const eventId = payload.eventId
         ? new EventId(payload.eventId)
@@ -101,22 +100,24 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
       throw error;
     }
 
-    const queueEntities: EventQueueEntity<WebsocketEventMessagingType.WS_POST_CREATED>[] =
+    const queueEntities: EventQueueEntity<SocialEventMessagingType.POST_SOCIAL_CREATED>[] =
       [];
 
     for (const { event } of validEvents) {
       const payload: IPostCreatedPayload = event.payload.after;
 
-      const payloadWsEvent: IPostCreatedWebsocketPayload = { id: payload.id };
+      const payloadPostSocialCreated: IPostSocialCreatedPayload = {
+        postId: payload.postId,
+      };
       queueEntities.push(
-        EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_POST_CREATED>(
+        EventQueueEntity.createEvent<SocialEventMessagingType.POST_SOCIAL_CREATED>(
           {
-            type: WebsocketEventMessagingType.WS_POST_CREATED,
+            type: SocialEventMessagingType.POST_SOCIAL_CREATED,
             emitter: event.emitter,
             emitterId: event.emitterId,
             traceId: event.traceId,
             correlationId: event.correlationId,
-            payload: payloadWsEvent,
+            payload: payloadPostSocialCreated,
             targetServices: [Streams.WS_POST_CREATED_FEEDBACK],
           },
         ),
@@ -126,7 +127,7 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
     if (queueEntities.length > 0) {
       try {
         const repo =
-          new EventQueueRepository<WebsocketEventMessagingType.WS_POST_CREATED>(
+          new EventQueueRepository<SocialEventMessagingType.POST_SOCIAL_CREATED>(
             this.typeormRepository,
           );
         const eventQueueWriter = new EventQueueWriter(this.logger, repo);
@@ -166,24 +167,24 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
       ) as StreamEvent<IPostCreatedPayload>;
       const payload: IPostCreatedPayload = event.payload.after;
 
-      const payloadWsEvent: IPostCreationFailedWebsocketPayload = {
-        id: payload.id,
+      const payloadPostSocialCreated: IPostSocialCreatedPayload = {
+        postId: payload.postId,
       };
       const queueEntity =
-        EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_POST_CREATION_FAILED>(
+        EventQueueEntity.createEvent<SocialEventMessagingType.POST_SOCIAL_CREATED>(
           {
-            type: WebsocketEventMessagingType.WS_POST_CREATION_FAILED,
+            type: SocialEventMessagingType.POST_SOCIAL_CREATED,
             emitter: event.emitter,
             emitterId: event.emitterId,
             traceId: event.traceId,
             correlationId: event.correlationId,
-            payload: payloadWsEvent,
+            payload: payloadPostSocialCreated,
             targetServices: [Streams.WS_POST_CREATED_FEEDBACK],
           },
         );
 
       const repo =
-        new EventQueueRepository<WebsocketEventMessagingType.WS_POST_CREATION_FAILED>(
+        new EventQueueRepository<SocialEventMessagingType.POST_SOCIAL_CREATED>(
           this.typeormRepository,
         );
       const eventQueueWriter = new EventQueueWriter(this.logger, repo);

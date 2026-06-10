@@ -1,7 +1,8 @@
 import { BatchPostProcessor } from '@volontariapp/post-processors';
-import type {
-  IEventCreatedWebsocketPayload,
-  IEventPayload,
+import {
+  IEventCreatedPayload,
+  IEventSocialCreatedPayload,
+  SocialEventMessagingType,
 } from '@volontariapp/messaging';
 import { Injectable } from '@nestjs/common';
 import { ParticipationService } from '@volontariapp/domain-social';
@@ -10,10 +11,7 @@ import type {
   PostProcessorOptions,
 } from '@volontariapp/post-processors';
 import type { Redis } from 'ioredis';
-import {
-  EventEventMessagingType,
-  WebsocketEventMessagingType,
-} from '@volontariapp/messaging';
+import { EventEventMessagingType } from '@volontariapp/messaging';
 import {
   databaseMapper,
   EventQueueEntity,
@@ -31,14 +29,14 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
   protected async processEvents(
     events: BatchEventItem<EventEventMessagingType.EVENT_CREATED>[],
   ): Promise<void> {
-    const queueEntities: EventQueueEntity<WebsocketEventMessagingType.WS_EVENT_CREATED>[] =
+    const queueEntities: EventQueueEntity<SocialEventMessagingType.EVENT_SOCIAL_CREATED>[] =
       [];
     const neo4jBatch: { eventId: string; organizerId: string }[] = [];
 
     events.forEach(({ event, messageId }) => {
-      const payload: IEventPayload = event.payload.after;
+      const payload: IEventCreatedPayload = event.payload.after;
 
-      if (!payload.id || !payload.organizerId) {
+      if (!event.emitterId || !payload.eventId) {
         this.logger.error(
           'Invalid payload for EVENT_CREATED: missing id or organizerId',
           {
@@ -48,38 +46,32 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
         );
         return;
       }
+      if (payload.userId) {
+        neo4jBatch.push({
+          eventId: payload.eventId,
+          organizerId: payload.userId,
+        });
+      } else {
+        neo4jBatch.push({
+          eventId: payload.eventId,
+          organizerId: event.emitterId,
+        });
+      }
 
-      neo4jBatch.push({
-        eventId: payload.id,
-        organizerId: payload.organizerId,
-      });
-
-      const payloadWsEvent: IEventCreatedWebsocketPayload = {
-        id: payload.id,
-        name: payload.name,
-        description: payload.description,
-        startAt: payload.startAt,
-        endAt: payload.endAt,
-        type: payload.type,
-        state: payload.state,
-        awardedImpactScore: payload.awardedImpactScore,
-        maxParticipants: payload.maxParticipants,
-        organizerId: payload.organizerId,
-        localisationName: payload.localisationName,
-        createdAt: payload.createdAt,
-        updatedAt: payload.updatedAt,
-        eventLocation: payload.eventLocation,
+      const payloadSocialEvent: IEventSocialCreatedPayload = {
+        eventId: payload.eventId,
+        userId: payload.userId,
       };
 
       const queueEntity =
-        EventQueueEntity.createEvent<WebsocketEventMessagingType.WS_EVENT_CREATED>(
+        EventQueueEntity.createEvent<SocialEventMessagingType.EVENT_SOCIAL_CREATED>(
           {
-            type: WebsocketEventMessagingType.WS_EVENT_CREATED,
+            type: SocialEventMessagingType.EVENT_SOCIAL_CREATED,
             emitter: event.emitter,
             emitterId: event.emitterId,
             traceId: event.traceId,
-            payload: payloadWsEvent,
-            targetServices: [Streams.WS_EVENT],
+            payload: payloadSocialEvent,
+            targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
           },
         );
 
@@ -100,9 +92,9 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
     if (queueEntities.length > 0) {
       try {
         const eventQueueWriter =
-          new EventQueueWriter<WebsocketEventMessagingType.WS_EVENT_CREATED>(
+          new EventQueueWriter<SocialEventMessagingType.EVENT_SOCIAL_CREATED>(
             this.logger,
-            new EventQueueRepository<WebsocketEventMessagingType.WS_EVENT_CREATED>(
+            new EventQueueRepository<SocialEventMessagingType.EVENT_SOCIAL_CREATED>(
               this.typeormRepository,
             ),
           );
