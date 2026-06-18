@@ -82,14 +82,14 @@ jobs:
           SERVICE_SHA_SHORT="${SERVICE_SHA:0:7}"
           REPO_OWNER_LOWER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           
-          WORKERS=("post-processor-user" "post-processor-event" "post-processor-post" "post-processor-social")
+          POST_PROCESSORS=("post-processor-user" "post-processor-event" "post-processor-post" "post-processor-social")
           UPDATED_FILES=()
           
-          for worker in "${WORKERS[@]}"; do
-            svc_name="${worker#post-processor-}"
+          for post_processor in "${POST_PROCESSORS[@]}"; do
+            svc_name="${post_processor#post-processor-}"
             
             DEPLOYMENT_FILE="apps/base/ms-${svc_name}/deployment-post-processor.yaml"
-            IMAGE_NAME="ghcr.io/${REPO_OWNER_LOWER}/${worker}:sha-${SERVICE_SHA_SHORT}"
+            IMAGE_NAME="ghcr.io/${REPO_OWNER_LOWER}/${post_processor}:sha-${SERVICE_SHA_SHORT}"
             
             if [ -f "$DEPLOYMENT_FILE" ]; then
               echo "Updating container image in $DEPLOYMENT_FILE to $IMAGE_NAME..."
