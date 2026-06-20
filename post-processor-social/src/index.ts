@@ -10,7 +10,7 @@ async function bootstrap() {
   const config = loadConfig(configDir, CustomConfig);
   const port = config.port;
 
-  logger.info('Bootstrapping NestJS application...');
+  logger.info('Bootstrapping NestJS application... (CI/CD test)');
 
   const app = await NestFactory.create(AppModule.register(config), {
     logger,
