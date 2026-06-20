@@ -57,35 +57,13 @@ jobs:
     needs: check
     if: github.ref == 'refs/heads/main'
     steps:
-      - name: Checkout Deploy Repository
-        uses: actions/checkout@v4
+      - name: Update Deploy Submodule and Images
+        uses: Volontariapp/ci-tools/.github/actions/update-deploy@main
         with:
-          repository: Volontariapp/deploy
-          token: ${{ secrets.ORG_REPO_TOKEN }}
-          path: deploy
-
-      - name: Update submodule
-        env:
-          ORG_REPO_TOKEN: ${{ secrets.ORG_REPO_TOKEN }}
-          SERVICE: "post-processors-runner"
-          SERVICE_SHA: "${{ github.sha }}"
-        run: |
-          cd deploy
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global url."https://x-access-token:${ORG_REPO_TOKEN}@github.com/".insteadOf "git@github.com:"
-          
-          git submodule update --init "submodules/$SERVICE"
-          git -C "submodules/$SERVICE" fetch origin "$SERVICE_SHA"
-          git -C "submodules/$SERVICE" checkout "$SERVICE_SHA"
-          
-          if ! git diff --quiet "submodules/$SERVICE"; then
-            git add "submodules/$SERVICE"
-            git commit -m "chore(deploy): update $SERVICE submodule to ${SERVICE_SHA:0:7}"
-            git pull --rebase origin main && git push origin main
-          else
-            echo "No changes to deploy"
-          fi
+          service: "post-processors-runner"
+          sha: "${{ github.sha }}"
+          org-repo-token: ${{ secrets.ORG_REPO_TOKEN }}
+          image-match: 'ghcr.io/volontariapp/post-processor-[^:]+'
 
   docker:
     name: Build & Push Docker Image (${{ matrix.worker }})
