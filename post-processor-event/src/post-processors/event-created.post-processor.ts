@@ -13,6 +13,8 @@ import {
 } from '@volontariapp/domain-event';
 import type { DataSource } from 'typeorm';
 import type { Redis } from 'ioredis';
+import { EventQueueModel } from '@volontariapp/database';
+import { Streams } from '@volontariapp/shared';
 
 export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMessagingType.EVENT_CREATED> {
   private readonly geocodingService: GeocodingService;
@@ -73,6 +75,27 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
           await this.eventRepository.update(eventId, {
             location: new EventLocation(geoResult.lat, geoResult.lng),
           });
+
+          // Write EVENT_GEOCODED to outbox database (event_queue)
+          const eventQueueRepo = this.db.getRepository(EventQueueModel);
+          await eventQueueRepo.save({
+            type: EventEventMessagingType.EVENT_GEOCODED,
+            emitter: 'ms-event',
+            emitterId: event.emitterId,
+            traceId: event.traceId,
+            correlationId: event.correlationId,
+            version: 1,
+            payload: {
+              before: undefined,
+              after: {
+                eventId,
+              },
+            },
+            targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
+          });
+          this.logger.log(
+            `Feedback event EVENT_GEOCODED registered in outbox for event ${String(eventId)}`,
+          );
         } else {
           this.logger.warn(
             `Geocoding failed to return results for event ${String(eventId)}`,
