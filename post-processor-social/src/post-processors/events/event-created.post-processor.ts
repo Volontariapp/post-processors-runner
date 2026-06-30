@@ -70,6 +70,7 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
             emitter: event.emitter,
             emitterId: event.emitterId,
             traceId: event.traceId,
+            correlationId: event.correlationId,
             payload: payloadSocialEvent,
             targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
           },
