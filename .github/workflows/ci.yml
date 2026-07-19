@@ -10,6 +10,9 @@ on:
 jobs:
   ci:
     uses: Volontariapp/ci-tools/.github/workflows/runner-pipeline.yml@main
+    permissions:
+      contents: read
+      packages: write
     with:
       service-name: post-processors-runner
       services: '["post-processor-user", "post-processor-event", "post-processor-post", "post-processor-social"]'
