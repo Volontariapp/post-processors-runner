@@ -52,7 +52,9 @@ describe('EventDeletedPostProcessor (Integration Test)', () => {
 
       expect(shouldProcessFn(EventEventMessagingType.EVENT_DELETED)).toBe(true);
       expect(shouldProcessFn('event.deleted')).toBe(true);
-      expect(shouldProcessFn(EventEventMessagingType.EVENT_CREATED)).toBe(false);
+      expect(shouldProcessFn(EventEventMessagingType.EVENT_CREATED)).toBe(
+        false,
+      );
     });
   });
 
@@ -147,8 +149,8 @@ describe('EventDeletedPostProcessor (Integration Test)', () => {
       const item = EventDeletedFactory.buildBatchEventItem();
       const error = new Error('Database error');
       (
-        postService.deleteByEventId as jest.MockedFunction<
-          typeof postService.deleteByEventId
+        postService.deleteByEventId as unknown as jest.Mock<
+          (eventId: string) => Promise<number>
         >
       ).mockRejectedValueOnce(error);
 

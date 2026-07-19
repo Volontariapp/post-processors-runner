@@ -8,9 +8,11 @@ import { createMockLogger } from '@volontariapp/testing';
 
 export function createMockPostService(): jest.Mocked<PostService> {
   return {
-    deleteByEventId: jest
-      .fn<PostService['deleteByEventId']>()
-      .mockResolvedValue(1),
+    deleteByEventId: (
+      jest.fn() as unknown as jest.MockedFunction<
+        (eventId: string) => Promise<number>
+      >
+    ).mockResolvedValue(1),
     findById: jest.fn<PostService['findById']>(),
     findByAuthorId: jest.fn<PostService['findByAuthorId']>(),
     findAll: jest.fn<PostService['findAll']>(),

@@ -40,7 +40,7 @@ export class EventDeletedPostProcessor extends BatchPostProcessor<EventEventMess
       const { event, messageId } = item;
       const payload: IEventDeletedPayload = event.payload.after;
 
-      if (!payload?.eventId) {
+      if (!payload.eventId) {
         this.logger.error(
           'Invalid payload for EVENT_DELETED: missing eventId',
           {
@@ -61,8 +61,13 @@ export class EventDeletedPostProcessor extends BatchPostProcessor<EventEventMess
       this.logger.info(
         `Batch processing ${String(eventIds.length)} EVENT_DELETED in Postgres (posts/comments)...`,
       );
+      const postServiceWithDelete = this.postService as unknown as {
+        deleteByEventId(id: string): Promise<number>;
+      };
       await Promise.all(
-        eventIds.map((eventId) => this.postService.deleteByEventId(eventId)),
+        eventIds.map((eventId) =>
+          postServiceWithDelete.deleteByEventId(eventId),
+        ),
       );
       this.logger.info(
         'Successfully batch processed EVENT_DELETED in Postgres',
