@@ -11,6 +11,7 @@ import {
   PostProcessorOptions,
 } from '@volontariapp/post-processors';
 import { EventCreatedPostProcessor } from './events/event-created.post-processor.js';
+import { EventDeletedPostProcessor } from './events/event-deleted.post-processor.js';
 import { UserCreatedPostProcessor } from './users/user-created.post-processor.js';
 import { PostCreatedPostProcessor } from './posts/post-created.post-processor.js';
 import { PostDeletedPostProcessor } from './posts/post-deleted.post-processor.js';
@@ -26,10 +27,12 @@ import {
   postProcessorsJobOutboxFailureOptionsProvider,
   postProcessorsJobOutboxSuccessOptionsProvider,
   eventCreatedOptionsProvider,
+  eventDeletedOptionsProvider,
   userCreatedOptionsProvider,
   POST_PROCESSORS_JOB_OUTBOX_SUCCESS_OPTIONS,
   POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
   POST_PROCESSOR_EVENT_CREATED_OPTIONS,
+  POST_PROCESSOR_EVENT_DELETED_OPTIONS,
   POST_PROCESSOR_USER_CREATED_OPTIONS,
   POST_PROCESSOR_POST_CREATED_OPTIONS,
   POST_PROCESSOR_POST_DELETED_OPTIONS,
@@ -42,6 +45,7 @@ import {
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
     eventCreatedOptionsProvider,
+    eventDeletedOptionsProvider,
     userCreatedOptionsProvider,
     postCreatedOptionsProvider,
     postDeletedOptionsProvider,
@@ -112,6 +116,31 @@ import {
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_EVENT_CREATED_OPTIONS,
+        ParticipationService,
+        getRepositoryToken(EventQueueModel),
+      ],
+    },
+    {
+      provide: EventDeletedPostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+        participationService: ParticipationService,
+        typeormRepository: Repository<EventQueueModel>,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new EventDeletedPostProcessor(
+          redisProvider.getDriver(),
+          options,
+          participationService,
+          typeormRepository,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        POST_PROCESSOR_EVENT_DELETED_OPTIONS,
         ParticipationService,
         getRepositoryToken(EventQueueModel),
       ],
