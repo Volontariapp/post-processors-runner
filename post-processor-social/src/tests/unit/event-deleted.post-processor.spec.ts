@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/unbound-method */
 import type { jest } from '@jest/globals';
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { EventDeletedPostProcessor } from '../../post-processors/events/event-deleted.post-processor.js';
@@ -44,7 +45,9 @@ describe('EventDeletedPostProcessor', () => {
 
   describe('shouldProcess', () => {
     it('should return true for EventEventMessagingType.EVENT_DELETED', () => {
-      const result = postProcessor['shouldProcess'](EventEventMessagingType.EVENT_DELETED);
+      const result = postProcessor['shouldProcess'](
+        EventEventMessagingType.EVENT_DELETED,
+      );
 
       expect(result).toBe(true);
     });
@@ -56,7 +59,9 @@ describe('EventDeletedPostProcessor', () => {
     });
 
     it('should return false for other event types', () => {
-      const result = postProcessor['shouldProcess'](EventEventMessagingType.EVENT_CREATED);
+      const result = postProcessor['shouldProcess'](
+        EventEventMessagingType.EVENT_CREATED,
+      );
 
       expect(result).toBe(false);
     });
@@ -141,11 +146,7 @@ describe('EventDeletedPostProcessor', () => {
     it('should re-throw error if participationService.deleteEventsBatch throws', async () => {
       const item = EventDeletedFactory.buildBatchEventItem();
       const error = new Error('Neo4j connection error');
-      (
-        participationService.deleteEventsBatch as jest.MockedFunction<
-          typeof participationService.deleteEventsBatch
-        >
-      ).mockRejectedValueOnce(error);
+      participationService.deleteEventsBatch.mockRejectedValueOnce(error);
 
       await expect(postProcessor['processEvents']([item])).rejects.toThrow(
         'Neo4j connection error',
@@ -163,7 +164,11 @@ describe('EventDeletedPostProcessor', () => {
       };
       const dlqError = 'Max retries reached';
 
-      await postProcessor['sendMessageToDlq'](messageId, originalPayload, dlqError);
+      await postProcessor['sendMessageToDlq'](
+        messageId,
+        originalPayload,
+        dlqError,
+      );
 
       const payload = item.event.payload.after;
 
@@ -193,7 +198,11 @@ describe('EventDeletedPostProcessor', () => {
       };
       const dlqError = 'Parse error';
 
-      await postProcessor['sendMessageToDlq'](messageId, originalPayload, dlqError);
+      await postProcessor['sendMessageToDlq'](
+        messageId,
+        originalPayload,
+        dlqError,
+      );
 
       expect(logger.warn).toHaveBeenCalledWith(
         'Original payload failed to parse, cannot send WS feedback',
