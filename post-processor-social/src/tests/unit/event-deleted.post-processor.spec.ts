@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/unbound-method */
 import type { jest } from '@jest/globals';
 import { describe, it, expect, beforeEach } from '@jest/globals';
 import { EventDeletedPostProcessor } from '../../post-processors/events/event-deleted.post-processor.js';
@@ -40,36 +39,24 @@ describe('EventDeletedPostProcessor', () => {
     );
 
     // Replace internal logger with mock logger
-    (postProcessor as unknown as { logger: typeof logger }).logger = logger;
+    postProcessor['logger'] = logger;
   });
 
   describe('shouldProcess', () => {
     it('should return true for EventEventMessagingType.EVENT_DELETED', () => {
-      const result = (
-        postProcessor as unknown as {
-          shouldProcess(type: string): boolean;
-        }
-      ).shouldProcess(EventEventMessagingType.EVENT_DELETED);
+      const result = postProcessor['shouldProcess'](EventEventMessagingType.EVENT_DELETED);
 
       expect(result).toBe(true);
     });
 
     it('should return true for string "event.deleted"', () => {
-      const result = (
-        postProcessor as unknown as {
-          shouldProcess(type: string): boolean;
-        }
-      ).shouldProcess('event.deleted');
+      const result = postProcessor['shouldProcess']('event.deleted');
 
       expect(result).toBe(true);
     });
 
     it('should return false for other event types', () => {
-      const result = (
-        postProcessor as unknown as {
-          shouldProcess(type: string): boolean;
-        }
-      ).shouldProcess(EventEventMessagingType.EVENT_CREATED);
+      const result = postProcessor['shouldProcess'](EventEventMessagingType.EVENT_CREATED);
 
       expect(result).toBe(false);
     });
@@ -81,25 +68,17 @@ describe('EventDeletedPostProcessor', () => {
       const item2 = EventDeletedFactory.buildBatchEventItem();
       const events = [item1, item2];
 
-      await (
-        postProcessor as unknown as {
-          processEvents(items: typeof events): Promise<void>;
-        }
-      ).processEvents(events);
+      await postProcessor['processEvents'](events);
 
       const payload1 = item1.event.payload.after;
       const payload2 = item2.event.payload.after;
 
       // Verify Neo4j delete calls
-      expect(participationService.deleteEvent).toHaveBeenCalledTimes(2);
-      expect(participationService.deleteEvent).toHaveBeenNthCalledWith(
-        1,
+      expect(participationService.deleteEventsBatch).toHaveBeenCalledTimes(1);
+      expect(participationService.deleteEventsBatch).toHaveBeenCalledWith([
         expect.objectContaining({ value: payload1.eventId }),
-      );
-      expect(participationService.deleteEvent).toHaveBeenNthCalledWith(
-        2,
         expect.objectContaining({ value: payload2.eventId }),
-      );
+      ]);
 
       // Verify EventQueue insertion (save on repository)
       expect(typeormRepository.save).toHaveBeenCalledTimes(1);
@@ -126,11 +105,7 @@ describe('EventDeletedPostProcessor', () => {
       const validItem = EventDeletedFactory.buildBatchEventItem();
       const events = [invalidItem, validItem];
 
-      await (
-        postProcessor as unknown as {
-          processEvents(items: typeof events): Promise<void>;
-        }
-      ).processEvents(events);
+      await postProcessor['processEvents'](events);
 
       const validPayload = validItem.event.payload.after;
 
@@ -141,10 +116,10 @@ describe('EventDeletedPostProcessor', () => {
       );
 
       // Only valid event processed in Neo4j
-      expect(participationService.deleteEvent).toHaveBeenCalledTimes(1);
-      expect(participationService.deleteEvent).toHaveBeenCalledWith(
+      expect(participationService.deleteEventsBatch).toHaveBeenCalledTimes(1);
+      expect(participationService.deleteEventsBatch).toHaveBeenCalledWith([
         expect.objectContaining({ value: validPayload.eventId }),
-      );
+      ]);
 
       // Only 1 feedback event queued
       expect(typeormRepository.save).toHaveBeenCalledTimes(1);
@@ -157,32 +132,24 @@ describe('EventDeletedPostProcessor', () => {
     it('should do nothing if batch contains no valid event items', async () => {
       const invalidItem = EventDeletedFactory.buildInvalidBatchEventItem();
 
-      await (
-        postProcessor as unknown as {
-          processEvents(items: (typeof invalidItem)[]): Promise<void>;
-        }
-      ).processEvents([invalidItem]);
+      await postProcessor['processEvents']([invalidItem]);
 
-      expect(participationService.deleteEvent).not.toHaveBeenCalled();
+      expect(participationService.deleteEventsBatch).not.toHaveBeenCalled();
       expect(typeormRepository.save).not.toHaveBeenCalled();
     });
 
-    it('should re-throw error if participationService.deleteEvent throws', async () => {
+    it('should re-throw error if participationService.deleteEventsBatch throws', async () => {
       const item = EventDeletedFactory.buildBatchEventItem();
       const error = new Error('Neo4j connection error');
       (
-        participationService.deleteEvent as jest.MockedFunction<
-          typeof participationService.deleteEvent
+        participationService.deleteEventsBatch as jest.MockedFunction<
+          typeof participationService.deleteEventsBatch
         >
       ).mockRejectedValueOnce(error);
 
-      await expect(
-        (
-          postProcessor as unknown as {
-            processEvents(items: (typeof item)[]): Promise<void>;
-          }
-        ).processEvents([item]),
-      ).rejects.toThrow('Neo4j connection error');
+      await expect(postProcessor['processEvents']([item])).rejects.toThrow(
+        'Neo4j connection error',
+      );
     });
   });
 
@@ -196,15 +163,7 @@ describe('EventDeletedPostProcessor', () => {
       };
       const dlqError = 'Max retries reached';
 
-      await (
-        postProcessor as unknown as {
-          sendMessageToDlq(
-            id: string,
-            payload: ParseResult,
-            err: string,
-          ): Promise<void>;
-        }
-      ).sendMessageToDlq(messageId, originalPayload, dlqError);
+      await postProcessor['sendMessageToDlq'](messageId, originalPayload, dlqError);
 
       const payload = item.event.payload.after;
 
@@ -234,15 +193,7 @@ describe('EventDeletedPostProcessor', () => {
       };
       const dlqError = 'Parse error';
 
-      await (
-        postProcessor as unknown as {
-          sendMessageToDlq(
-            id: string,
-            payload: ParseResult,
-            err: string,
-          ): Promise<void>;
-        }
-      ).sendMessageToDlq(messageId, originalPayload, dlqError);
+      await postProcessor['sendMessageToDlq'](messageId, originalPayload, dlqError);
 
       expect(logger.warn).toHaveBeenCalledWith(
         'Original payload failed to parse, cannot send WS feedback',

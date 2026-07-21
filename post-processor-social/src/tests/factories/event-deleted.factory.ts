@@ -48,17 +48,24 @@ export class EventDeletedFactory {
   static buildInvalidBatchEventItem(
     messageIdOverride?: string,
   ): BatchEventItem<EventEventMessagingType.EVENT_DELETED> {
-    const event = {
+    const payload: IEventDeletedPayload = {
+      eventId: '',
+    };
+
+    const event: StreamEvent<IEventDeletedPayload> = {
+      id: randomUUID(),
+      version: 1,
       type: EventEventMessagingType.EVENT_DELETED,
       emitter: 'ms-event',
       emitterId: randomUUID(),
       traceId: randomUUID(),
       correlationId: randomUUID(),
+      createdAt: new Date().toISOString(),
       payload: {
-        before: {} as unknown as IEventDeletedPayload,
-        after: {} as unknown as IEventDeletedPayload,
+        before: payload,
+        after: payload,
       },
-    } as unknown as StreamEvent<IEventDeletedPayload>;
+    };
 
     return {
       messageId:

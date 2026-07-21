@@ -61,11 +61,7 @@ export class EventDeletedPostProcessor extends BatchPostProcessor<EventEventMess
       this.logger.info(
         `Batch processing ${String(eventIds.length)} EVENT_DELETED in Neo4j...`,
       );
-      await Promise.all(
-        eventIds.map((eventId) =>
-          this.participationService.deleteEvent(eventId),
-        ),
-      );
+      await this.participationService.deleteEventsBatch(eventIds);
       this.logger.info('Successfully batch processed EVENT_DELETED in Neo4j');
     } catch (error) {
       this.logger.error(

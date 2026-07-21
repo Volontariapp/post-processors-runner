@@ -11,6 +11,9 @@ export function createMockParticipationService(): jest.Mocked<ParticipationServi
     deleteEvent: jest
       .fn<ParticipationService['deleteEvent']>()
       .mockResolvedValue(undefined),
+    deleteEventsBatch: jest
+      .fn<ParticipationService['deleteEventsBatch']>()
+      .mockResolvedValue(undefined),
     createEvent: jest
       .fn<ParticipationService['createEvent']>()
       .mockResolvedValue(undefined),
