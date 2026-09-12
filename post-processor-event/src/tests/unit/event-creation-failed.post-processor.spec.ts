@@ -2,9 +2,10 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { EventCreationFailedPostProcessor } from '../../post-processors/event-creation-failed.post-processor.js';
 import { EventEventMessagingType } from '@volontariapp/messaging';
 import { SagaStatus } from '@volontariapp/shared';
-import { DataSource } from 'typeorm';
-import { Redis } from 'ioredis';
-import { PostProcessorOptions } from '@volontariapp/post-processors';
+import type { BatchEventItem } from '@volontariapp/post-processors';
+import type { DataSource } from 'typeorm';
+import type { Redis } from 'ioredis';
+import type { PostProcessorOptions } from '@volontariapp/post-processors';
 
 describe('EventCreationFailedPostProcessor', () => {
   let postProcessor: EventCreationFailedPostProcessor;
@@ -40,13 +41,14 @@ describe('EventCreationFailedPostProcessor', () => {
       mockOptions,
     );
 
-    postProcessor['logger'] = {
+    const mockLogger = {
       log: jest.fn(),
       info: jest.fn(),
       warn: jest.fn(),
       error: jest.fn(),
       debug: jest.fn(),
-    } as any;
+    };
+    Object.defineProperty(postProcessor, 'logger', { value: mockLogger });
   });
 
   describe('shouldProcess', () => {
@@ -67,28 +69,29 @@ describe('EventCreationFailedPostProcessor', () => {
 
   describe('processEvents', () => {
     it('should update saga status to CANCEL for valid event creation failed payload', async () => {
-      const item = {
-        messageId: 'msg-1',
-        event: {
-          id: 'evt-msg-1',
-          type: EventEventMessagingType.EVENT_CREATION_FAILED.toString(),
-          emitter: 'ws-service',
-          emitterId: 'emitter-1',
-          correlationId: 'corr-1',
-          traceId: 'trace-1',
-          version: 1,
-          createdAt: new Date().toISOString(),
-          payload: {
-            before: undefined,
-            after: {
-              eventId: 'evt-123',
-              failedEvents: ['GEOCODED_SUCCESS'],
+      const item: BatchEventItem<EventEventMessagingType.EVENT_CREATION_FAILED> =
+        {
+          messageId: 'msg-1',
+          event: {
+            id: 'evt-msg-1',
+            type: EventEventMessagingType.EVENT_CREATION_FAILED,
+            emitter: 'ws-service',
+            emitterId: 'emitter-1',
+            correlationId: 'corr-1',
+            traceId: 'trace-1',
+            version: 1,
+            createdAt: new Date().toISOString(),
+            payload: {
+              before: undefined,
+              after: {
+                eventId: 'evt-123',
+                failedEvents: ['GEOCODED_SUCCESS'],
+              },
             },
           },
-        },
-      };
+        };
 
-      await postProcessor['processEvents']([item as any]);
+      await postProcessor['processEvents']([item]);
 
       expect(mockEventRepository.update).toHaveBeenCalledTimes(1);
       expect(mockEventRepository.update).toHaveBeenCalledWith('evt-123', {
@@ -101,7 +104,7 @@ describe('EventCreationFailedPostProcessor', () => {
         messageId: 'msg-2',
         event: {
           id: 'evt-msg-2',
-          type: EventEventMessagingType.EVENT_CREATION_FAILED.toString(),
+          type: EventEventMessagingType.EVENT_CREATION_FAILED,
           emitter: 'ws-service',
           emitterId: 'emitter-1',
           correlationId: 'corr-2',
@@ -110,41 +113,44 @@ describe('EventCreationFailedPostProcessor', () => {
           createdAt: new Date().toISOString(),
           payload: {
             before: undefined,
-            after: {},
+            after: {
+              eventId: '',
+            },
           },
         },
-      };
+      } as unknown as BatchEventItem<EventEventMessagingType.EVENT_CREATION_FAILED>;
 
-      await postProcessor['processEvents']([invalidItem as any]);
+      await postProcessor['processEvents']([invalidItem]);
 
       expect(mockEventRepository.update).not.toHaveBeenCalled();
     });
 
     it('should re-throw error if repository update fails', async () => {
-      const item = {
-        messageId: 'msg-3',
-        event: {
-          id: 'evt-msg-3',
-          type: EventEventMessagingType.EVENT_CREATION_FAILED.toString(),
-          emitter: 'ws-service',
-          emitterId: 'emitter-1',
-          correlationId: 'corr-3',
-          traceId: 'trace-3',
-          version: 1,
-          createdAt: new Date().toISOString(),
-          payload: {
-            before: undefined,
-            after: {
-              eventId: 'evt-999',
+      const item: BatchEventItem<EventEventMessagingType.EVENT_CREATION_FAILED> =
+        {
+          messageId: 'msg-3',
+          event: {
+            id: 'evt-msg-3',
+            type: EventEventMessagingType.EVENT_CREATION_FAILED,
+            emitter: 'ws-service',
+            emitterId: 'emitter-1',
+            correlationId: 'corr-3',
+            traceId: 'trace-3',
+            version: 1,
+            createdAt: new Date().toISOString(),
+            payload: {
+              before: undefined,
+              after: {
+                eventId: 'evt-999',
+              },
             },
           },
-        },
-      };
+        };
 
       const error = new Error('Database connection failed');
       mockEventRepository.update.mockRejectedValueOnce(error);
 
-      await expect(postProcessor['processEvents']([item as any])).rejects.toThrow(
+      await expect(postProcessor['processEvents']([item])).rejects.toThrow(
         'Database connection failed',
       );
     });

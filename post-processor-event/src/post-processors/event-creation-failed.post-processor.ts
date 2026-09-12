@@ -30,7 +30,9 @@ export class EventCreationFailedPostProcessor extends BatchPostProcessor<EventEv
   protected override shouldProcess(
     eventType: EventEventMessagingType | string,
   ): boolean {
-    return eventType === EventEventMessagingType.EVENT_CREATION_FAILED.toString();
+    return (
+      eventType === EventEventMessagingType.EVENT_CREATION_FAILED.toString()
+    );
   }
 
   protected async processEvents(
@@ -40,9 +42,12 @@ export class EventCreationFailedPostProcessor extends BatchPostProcessor<EventEv
       const { eventId } = event.payload.after;
 
       if (!eventId) {
-        this.logger.error('Invalid payload for EVENT_CREATION_FAILED: missing eventId', {
-          messageId,
-        });
+        this.logger.error(
+          'Invalid payload for EVENT_CREATION_FAILED: missing eventId',
+          {
+            messageId,
+          },
+        );
         continue;
       }
 
