@@ -2,9 +2,9 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { EventCreationFailedPostProcessor } from '../../post-processors/event-creation-failed.post-processor.js';
 import { EventEventMessagingType } from '@volontariapp/messaging';
 import { SagaStatus } from '@volontariapp/shared';
-import type { DataSource } from 'typeorm';
-import type { Redis } from 'ioredis';
-import type { PostProcessorOptions } from '@volontariapp/post-processors';
+import { DataSource } from 'typeorm';
+import { Redis } from 'ioredis';
+import { PostProcessorOptions } from '@volontariapp/post-processors';
 
 describe('EventCreationFailedPostProcessor', () => {
   let postProcessor: EventCreationFailedPostProcessor;
@@ -15,11 +15,11 @@ describe('EventCreationFailedPostProcessor', () => {
 
   beforeEach(() => {
     mockEventRepository = {
-      update: jest.fn<any>().mockResolvedValue({ affected: 1 }),
+      update: jest.fn().mockResolvedValue({ affected: 1 } as never),
     };
 
     mockDb = {
-      getRepository: jest.fn<any>().mockReturnValue(mockEventRepository),
+      getRepository: jest.fn().mockReturnValue(mockEventRepository),
     } as unknown as jest.Mocked<DataSource>;
 
     mockRedisDriver = {} as unknown as jest.Mocked<Redis>;
