@@ -6,6 +6,7 @@ import type { BatchEventItem } from '@volontariapp/post-processors';
 import type { DataSource } from 'typeorm';
 import type { Redis } from 'ioredis';
 import type { PostProcessorOptions } from '@volontariapp/post-processors';
+import { createMock } from '@volontariapp/testing';
 
 describe('EventCreationFailedPostProcessor', () => {
   let postProcessor: EventCreationFailedPostProcessor;
@@ -19,11 +20,10 @@ describe('EventCreationFailedPostProcessor', () => {
       update: jest.fn().mockResolvedValue({ affected: 1 } as never),
     };
 
-    mockDb = {
-      getRepository: jest.fn().mockReturnValue(mockEventRepository),
-    } as unknown as jest.Mocked<DataSource>;
+    mockDb = createMock<DataSource>();
+    mockDb.getRepository.mockReturnValue(mockEventRepository as never);
 
-    mockRedisDriver = {} as unknown as jest.Mocked<Redis>;
+    mockRedisDriver = createMock<Redis>();
     mockOptions = {
       streamName: 'test-stream',
       groupName: 'test-group',
@@ -100,25 +100,26 @@ describe('EventCreationFailedPostProcessor', () => {
     });
 
     it('should skip processing if eventId is missing', async () => {
-      const invalidItem = {
-        messageId: 'msg-2',
-        event: {
-          id: 'evt-msg-2',
-          type: EventEventMessagingType.EVENT_CREATION_FAILED,
-          emitter: 'ws-service',
-          emitterId: 'emitter-1',
-          correlationId: 'corr-2',
-          traceId: 'trace-2',
-          version: 1,
-          createdAt: new Date().toISOString(),
-          payload: {
-            before: undefined,
-            after: {
-              eventId: '',
+      const invalidItem: BatchEventItem<EventEventMessagingType.EVENT_CREATION_FAILED> =
+        {
+          messageId: 'msg-2',
+          event: {
+            id: 'evt-msg-2',
+            type: EventEventMessagingType.EVENT_CREATION_FAILED,
+            emitter: 'ws-service',
+            emitterId: 'emitter-1',
+            correlationId: 'corr-2',
+            traceId: 'trace-2',
+            version: 1,
+            createdAt: new Date().toISOString(),
+            payload: {
+              before: undefined,
+              after: {
+                eventId: '',
+              },
             },
           },
-        },
-      } as unknown as BatchEventItem<EventEventMessagingType.EVENT_CREATION_FAILED>;
+        };
 
       await postProcessor['processEvents']([invalidItem]);
 
