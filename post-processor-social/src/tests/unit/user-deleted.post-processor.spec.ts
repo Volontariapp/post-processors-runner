@@ -8,7 +8,10 @@ import {
 } from '@volontariapp/messaging';
 import { Streams } from '@volontariapp/shared';
 import type { Redis } from 'ioredis';
-import type { PostProcessorOptions, BatchEventItem } from '@volontariapp/post-processors';
+import type {
+  PostProcessorOptions,
+  BatchEventItem,
+} from '@volontariapp/post-processors';
 import type { Repository } from 'typeorm';
 import type { EventQueueModel } from '@volontariapp/database';
 import type { SocialUserService } from '@volontariapp/domain-social';
@@ -16,7 +19,6 @@ import type { SocialUserService } from '@volontariapp/domain-social';
 import {
   createMockRedisClient,
   createMockOptions,
-  createMockEventQueueRepository,
 } from '../mocks/event-deleted.post-processor.mock.js';
 
 describe('UserDeletedPostProcessor', () => {
@@ -25,13 +27,25 @@ describe('UserDeletedPostProcessor', () => {
   let typeormRepositoryMock: jest.Mocked<Repository<EventQueueModel>>;
   let redisClientMock: jest.Mocked<Redis>;
   let optionsMock: PostProcessorOptions;
+  let deleteUserMock: jest.MockedFunction<SocialUserService['deleteUser']>;
+  let saveMock: jest.Mock;
 
   beforeEach(() => {
+    deleteUserMock = jest
+      .fn<SocialUserService['deleteUser']>()
+      .mockResolvedValue(undefined);
     socialUserServiceMock = {
-      deleteUser: jest.fn<SocialUserService['deleteUser']>().mockResolvedValue(undefined),
+      deleteUser: deleteUserMock,
     } as unknown as jest.Mocked<SocialUserService>;
 
-    typeormRepositoryMock = createMockEventQueueRepository();
+    saveMock = jest
+      .fn()
+      .mockImplementation((entities) => Promise.resolve(entities));
+    typeormRepositoryMock = {
+      create: jest.fn().mockImplementation((entity) => entity),
+      save: saveMock,
+      insert: jest.fn(),
+    } as unknown as jest.Mocked<Repository<EventQueueModel>>;
 
     redisClientMock = createMockRedisClient();
     optionsMock = createMockOptions();
@@ -46,7 +60,9 @@ describe('UserDeletedPostProcessor', () => {
 
   describe('shouldProcess', () => {
     it('should return true for UserEventMessagingType.USER_DELETED', () => {
-      const result = postProcessor['shouldProcess'](UserEventMessagingType.USER_DELETED);
+      const result = postProcessor['shouldProcess'](
+        UserEventMessagingType.USER_DELETED,
+      );
       expect(result).toBe(true);
     });
 
@@ -77,24 +93,27 @@ describe('UserDeletedPostProcessor', () => {
         },
       };
 
-      const batchItems: BatchEventItem<UserEventMessagingType.USER_DELETED>[] = [
-        { event: streamEvent, messageId: 'msg-id-1' },
-      ];
+      const batchItems: BatchEventItem<UserEventMessagingType.USER_DELETED>[] =
+        [{ event: streamEvent, messageId: 'msg-id-1' }];
 
       await postProcessor['processEvents'](batchItems);
 
-      expect(socialUserServiceMock.deleteUser).toHaveBeenCalledTimes(1);
-      expect(typeormRepositoryMock.save).toHaveBeenCalledTimes(1);
+      expect(deleteUserMock).toHaveBeenCalledTimes(1);
+      expect(saveMock).toHaveBeenCalledTimes(1);
 
-      const savedEntities = (typeormRepositoryMock.save as jest.Mock).mock.calls[0][0] as Array<{
+      const savedEntities = saveMock.mock.calls[0][0] as Array<{
         type: string;
         targetServices: string[];
         payload: { after: { userId: string } };
       }>;
 
       expect(savedEntities).toHaveLength(1);
-      expect(savedEntities[0].type).toBe(SocialEventMessagingType.USER_SOCIAL_DELETED);
-      expect(savedEntities[0].targetServices).toContain(Streams.WS_USER_DELETED_FEEDBACK);
+      expect(savedEntities[0].type).toBe(
+        SocialEventMessagingType.USER_SOCIAL_DELETED,
+      );
+      expect(savedEntities[0].targetServices).toContain(
+        Streams.WS_USER_DELETED_FEEDBACK,
+      );
       expect(savedEntities[0].payload.after.userId).toBe(userId);
     });
   });
