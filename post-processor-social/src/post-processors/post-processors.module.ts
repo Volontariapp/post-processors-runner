@@ -13,6 +13,7 @@ import {
 import { EventCreatedPostProcessor } from './events/event-created.post-processor.js';
 import { EventDeletedPostProcessor } from './events/event-deleted.post-processor.js';
 import { UserCreatedPostProcessor } from './users/user-created.post-processor.js';
+import { UserDeletedPostProcessor } from './users/user-deleted.post-processor.js';
 import { PostCreatedPostProcessor } from './posts/post-created.post-processor.js';
 import { PostDeletedPostProcessor } from './posts/post-deleted.post-processor.js';
 import { getRepositoryToken, TypeOrmModule } from '@nestjs/typeorm';
@@ -29,11 +30,13 @@ import {
   eventCreatedOptionsProvider,
   eventDeletedOptionsProvider,
   userCreatedOptionsProvider,
+  userDeletedOptionsProvider,
   POST_PROCESSORS_JOB_OUTBOX_SUCCESS_OPTIONS,
   POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
   POST_PROCESSOR_EVENT_CREATED_OPTIONS,
   POST_PROCESSOR_EVENT_DELETED_OPTIONS,
   POST_PROCESSOR_USER_CREATED_OPTIONS,
+  POST_PROCESSOR_USER_DELETED_OPTIONS,
   POST_PROCESSOR_POST_CREATED_OPTIONS,
   POST_PROCESSOR_POST_DELETED_OPTIONS,
   postCreatedOptionsProvider,
@@ -47,6 +50,7 @@ import {
     eventCreatedOptionsProvider,
     eventDeletedOptionsProvider,
     userCreatedOptionsProvider,
+    userDeletedOptionsProvider,
     postCreatedOptionsProvider,
     postDeletedOptionsProvider,
     {
@@ -166,6 +170,31 @@ import {
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_USER_CREATED_OPTIONS,
+        SocialUserService,
+        getRepositoryToken(EventQueueModel),
+      ],
+    },
+    {
+      provide: UserDeletedPostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+        socialUserService: SocialUserService,
+        typeormRepository: Repository<EventQueueModel>,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new UserDeletedPostProcessor(
+          redisProvider.getDriver(),
+          options,
+          socialUserService,
+          typeormRepository,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        POST_PROCESSOR_USER_DELETED_OPTIONS,
         SocialUserService,
         getRepositoryToken(EventQueueModel),
       ],
