@@ -14,13 +14,16 @@ import {
   postProcessorsJobOutboxSuccessOptionsProvider,
   postProcessorsEventCreatedOptionsProvider,
   postProcessorsEventCreationFailedOptionsProvider,
+  postProcessorsEventCreationSuccessfullOptionsProvider,
   POST_PROCESSORS_JOB_OUTBOX_SUCCESS_OPTIONS,
   POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
   POST_PROCESSORS_EVENT_CREATED_OPTIONS,
   POST_PROCESSORS_EVENT_CREATION_FAILED_OPTIONS,
+  POST_PROCESSORS_EVENT_CREATION_SUCCESSFULL_OPTIONS,
 } from './options/index.js';
 import { EventCreatedPostProcessor } from './event-created.post-processor.js';
 import { EventCreationFailedPostProcessor } from './event-creation-failed.post-processor.js';
+import { EventCreationSuccessfullPostProcessor } from './event-creation-successfull.post-processor.js';
 
 @Module({
   providers: [
@@ -28,6 +31,7 @@ import { EventCreationFailedPostProcessor } from './event-creation-failed.post-p
     postProcessorsJobOutboxFailureOptionsProvider,
     postProcessorsEventCreatedOptionsProvider,
     postProcessorsEventCreationFailedOptionsProvider,
+    postProcessorsEventCreationSuccessfullOptionsProvider,
     {
       provide: JobOutboxSuccessPostProcessor,
       useFactory: async (
@@ -118,6 +122,29 @@ import { EventCreationFailedPostProcessor } from './event-creation-failed.post-p
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_EVENT_CREATION_FAILED_OPTIONS,
+      ],
+    },
+    {
+      provide: EventCreationSuccessfullPostProcessor,
+      useFactory: async (
+        dbProvider: PostgresProvider,
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+      ) => {
+        await dbProvider.connect();
+        await redisProvider.connect();
+        const postProcessor = new EventCreationSuccessfullPostProcessor(
+          dbProvider.getDriver(),
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestPostgresProvider,
+        NestRedisProvider,
+        POST_PROCESSORS_EVENT_CREATION_SUCCESSFULL_OPTIONS,
       ],
     },
   ],
