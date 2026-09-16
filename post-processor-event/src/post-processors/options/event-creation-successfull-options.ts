@@ -7,7 +7,7 @@ export const postProcessorsEventCreationSuccessfullOptionsProvider = {
   provide: POST_PROCESSORS_EVENT_CREATION_SUCCESSFULL_OPTIONS,
   useFactory: (customConfig: CustomConfig) => ({
     groupName: customConfig.postProcessor.groupName,
-    streamName: getEventStreamName(Streams.WS_EVENT_CREATED_FEEDBACK),
+    streamName: getEventStreamName(Streams.EVENT_SUCCESSFULLY_CREATED),
     batchSize: customConfig.postProcessor.batchSize,
     blockTimeout: customConfig.postProcessor.blockTimeout,
     idempotencyTtlSeconds: customConfig.postProcessor.idempotencyTtlSeconds,
