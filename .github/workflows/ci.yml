@@ -15,6 +15,6 @@ jobs:
       packages: write
     with:
       service-name: post-processors-runner
-      services: '["post-processor-user", "post-processor-event", "post-processor-post", "post-processor-social"]'
+      services: '["post-processor-user", "post-processor-event", "post-processor-post", "post-processor-social", "post-processor-storage"]'
     secrets:
       ORG_REPO_TOKEN: ${{ secrets.ORG_REPO_TOKEN }}
