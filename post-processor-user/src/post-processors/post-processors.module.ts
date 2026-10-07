@@ -27,7 +27,8 @@ import { EventCreationSuccessfullBadgePostProcessor } from './events/event-creat
     eventCreationSuccessfullBadgeOptionsProvider,
     {
       provide: BadgeEvaluator,
-      useFactory: (dbProvider: PostgresProvider) => {
+      useFactory: async (dbProvider: PostgresProvider) => {
+        await dbProvider.connect();
         return new BadgeEvaluator(dbProvider.getDriver());
       },
       inject: [NestPostgresProvider],
