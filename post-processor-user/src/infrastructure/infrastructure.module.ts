@@ -14,7 +14,11 @@ import {
 import { PostgresProvider, RedisProvider } from '@volontariapp/bridge';
 import { CustomConfig } from '../config/custom-config.js';
 import { Logger } from '@volontariapp/logger';
-import { BadgeModel, UserBadgeModel, UserModel } from '@volontariapp/domain-user';
+import {
+  BadgeModel,
+  UserBadgeModel,
+  UserModel,
+} from '@volontariapp/domain-user';
 import {
   EventQueueModel,
   JobsOutboxModel,

@@ -33,7 +33,9 @@ describe('BadgeEvaluator', () => {
       expect(mockEnv.repositories.badgeRepo.findOneBy).toHaveBeenCalledWith({
         slug: 'EVENT_HOST_COUNT_1',
       });
-      expect(mockEnv.repositories.userBadgeRepo.findOneBy).not.toHaveBeenCalled();
+      expect(
+        mockEnv.repositories.userBadgeRepo.findOneBy,
+      ).not.toHaveBeenCalled();
       expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
     });
 
@@ -48,10 +50,12 @@ describe('BadgeEvaluator', () => {
       const result = await evaluator.evaluateEventHostBadge('user-1');
 
       expect(result).toEqual([]);
-      expect(mockEnv.repositories.userBadgeRepo.findOneBy).toHaveBeenCalledWith({
-        userId: 'user-1',
-        badgeId: badge.id,
-      });
+      expect(mockEnv.repositories.userBadgeRepo.findOneBy).toHaveBeenCalledWith(
+        {
+          userId: 'user-1',
+          badgeId: badge.id,
+        },
+      );
       expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
     });
 

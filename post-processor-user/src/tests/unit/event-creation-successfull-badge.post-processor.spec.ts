@@ -1,7 +1,10 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import { EventCreationSuccessfullBadgePostProcessor } from '../../post-processors/events/event-creation-successfull-badge.post-processor.js';
 import { EventEventMessagingType } from '@volontariapp/messaging';
-import type { BatchEventItem, PostProcessorOptions } from '@volontariapp/post-processors';
+import type {
+  BatchEventItem,
+  PostProcessorOptions,
+} from '@volontariapp/post-processors';
 import type { Redis } from 'ioredis';
 import { createMock } from '@volontariapp/testing';
 import { createMockBadgeEvaluator } from '../mocks/badge-evaluator.mock.js';
@@ -156,9 +159,9 @@ describe('EventCreationSuccessfullBadgePostProcessor', () => {
         },
       } as unknown as BatchEventItem<EventEventMessagingType.EVENT_CREATION_SUCCESSFULL>;
 
-      await expect(
-        postProcessor['processEvents']([eventItem]),
-      ).rejects.toThrow('DB connection lost');
+      await expect(postProcessor['processEvents']([eventItem])).rejects.toThrow(
+        'DB connection lost',
+      );
     });
   });
 });

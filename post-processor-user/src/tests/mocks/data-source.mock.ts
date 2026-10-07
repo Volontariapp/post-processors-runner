@@ -28,6 +28,7 @@ export function createMockDataSource(): {
     into: jest.Mock;
     values: jest.Mock;
     onConflict: jest.Mock;
+    orIgnore: jest.Mock;
     returning: jest.Mock;
     execute: jest.Mock;
   };
@@ -50,6 +51,7 @@ export function createMockDataSource(): {
     into: jest.fn().mockReturnThis(),
     values: jest.fn().mockReturnThis(),
     onConflict: jest.fn().mockReturnThis(),
+    orIgnore: jest.fn().mockReturnThis(),
     returning: jest.fn().mockReturnThis(),
     execute: jest.fn(),
   };

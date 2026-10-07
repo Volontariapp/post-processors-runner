@@ -1,7 +1,9 @@
 import type { BadgeModel } from '@volontariapp/domain-user';
 import type { IBadgePayload } from '@volontariapp/messaging';
 
-export function createBadgeModel(overrides: Partial<BadgeModel> = {}): BadgeModel {
+export function createBadgeModel(
+  overrides: Partial<BadgeModel> = {},
+): BadgeModel {
   return {
     id: 'badge-uuid-1',
     name: 'Bâtisseur·se',
@@ -13,7 +15,9 @@ export function createBadgeModel(overrides: Partial<BadgeModel> = {}): BadgeMode
   };
 }
 
-export function createBadgePayload(overrides: Partial<IBadgePayload> = {}): IBadgePayload {
+export function createBadgePayload(
+  overrides: Partial<IBadgePayload> = {},
+): IBadgePayload {
   return {
     id: 'badge-uuid-1',
     name: 'Bâtisseur·se',

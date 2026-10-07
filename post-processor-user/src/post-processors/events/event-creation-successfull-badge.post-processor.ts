@@ -20,7 +20,8 @@ export class EventCreationSuccessfullBadgePostProcessor extends BatchPostProcess
     eventType: EventEventMessagingType | string,
   ): boolean {
     return (
-      eventType === EventEventMessagingType.EVENT_CREATION_SUCCESSFULL.toString()
+      eventType ===
+      EventEventMessagingType.EVENT_CREATION_SUCCESSFULL.toString()
     );
   }
 
@@ -51,10 +52,13 @@ export class EventCreationSuccessfullBadgePostProcessor extends BatchPostProcess
           },
         );
 
-        const awarded = await this.badgeEvaluator.evaluateEventHostBadge(userId, {
-          correlationId: event.correlationId,
-          traceId: event.traceId,
-        });
+        const awarded = await this.badgeEvaluator.evaluateEventHostBadge(
+          userId,
+          {
+            correlationId: event.correlationId,
+            traceId: event.traceId,
+          },
+        );
 
         if (awarded.length > 0) {
           this.logger.log(

@@ -65,7 +65,7 @@ export class BadgeEvaluator {
           userId,
           badgeId: badge.id,
         })
-        .onConflict('("user_id", "badge_id") DO NOTHING')
+        .orIgnore()
         .returning('badge_id')
         .execute();
 
