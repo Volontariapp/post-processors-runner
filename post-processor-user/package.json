@@ -15,6 +15,7 @@
     "lint": "eslint \"src/**/*.ts\" --fix"
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.14.5",
     "@nestjs/axios": "^4.0.1",
     "@nestjs/common": "^11.0.1",
     "@nestjs/core": "^11.0.1",
@@ -46,7 +47,6 @@
     "typeorm": "^0.3.28"
   },
   "devDependencies": {
-    "@grpc/grpc-js": "^1.14.5",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.10.7",
     "@volontariapp/bridge": "^1.0.7",
