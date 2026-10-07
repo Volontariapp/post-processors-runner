@@ -4,5 +4,6 @@ import type { BadgeEvaluator } from '../../core/services/badge-evaluator.service
 export function createMockBadgeEvaluator(): jest.Mocked<BadgeEvaluator> {
   return {
     evaluateEventHostBadge: jest.fn(),
+    evaluateCommunityPostBadge: jest.fn(),
   } as unknown as jest.Mocked<BadgeEvaluator>;
 }

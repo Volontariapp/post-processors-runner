@@ -32,7 +32,21 @@ export class BadgeEvaluator {
     userId: string,
     context?: EvaluationContext,
   ): Promise<IBadgePayload[]> {
-    const badgeSlug = 'EVENT_HOST_COUNT_1';
+    return this.evaluateBadge('EVENT_HOST_COUNT_1', userId, context);
+  }
+
+  async evaluateCommunityPostBadge(
+    userId: string,
+    context?: EvaluationContext,
+  ): Promise<IBadgePayload[]> {
+    return this.evaluateBadge('COMMUNITY_POST_COUNT_1', userId, context);
+  }
+
+  private async evaluateBadge(
+    badgeSlug: string,
+    userId: string,
+    context?: EvaluationContext,
+  ): Promise<IBadgePayload[]> {
     const badgeRepo = this.db.getRepository(BadgeModel);
     const badge = await badgeRepo.findOneBy({ slug: badgeSlug });
 

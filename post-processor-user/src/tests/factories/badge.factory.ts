@@ -27,3 +27,30 @@ export function createBadgePayload(
     ...overrides,
   };
 }
+
+export function createCommunityPostBadgeModel(
+  overrides: Partial<BadgeModel> = {},
+): BadgeModel {
+  return {
+    id: 'badge-uuid-2',
+    name: 'Première Plume',
+    slug: 'COMMUNITY_POST_COUNT_1',
+    description: 'Créer 1 post',
+    iconPath: '/icons/first-post.svg',
+    userBadges: [],
+    ...overrides,
+  };
+}
+
+export function createCommunityPostBadgePayload(
+  overrides: Partial<IBadgePayload> = {},
+): IBadgePayload {
+  return {
+    id: 'badge-uuid-2',
+    name: 'Première Plume',
+    slug: 'COMMUNITY_POST_COUNT_1',
+    description: 'Créer 1 post',
+    iconPath: '/icons/first-post.svg',
+    ...overrides,
+  };
+}
