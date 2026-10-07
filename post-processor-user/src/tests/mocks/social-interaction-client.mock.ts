@@ -4,5 +4,6 @@ import type { ISocialInteractionClient } from '../../core/clients/social-interac
 export function createMockSocialInteractionClient(): jest.Mocked<ISocialInteractionClient> {
   return {
     getUserLikesCount: jest.fn<() => Promise<number>>(),
+    getUserWishEventsCount: jest.fn<() => Promise<number>>(),
   };
 }

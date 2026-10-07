@@ -4,7 +4,10 @@ import type { ClientGrpc } from '@nestjs/microservices';
 import type { JwtService } from '@volontariapp/auth';
 import { UserRoles } from '@volontariapp/shared';
 import { of } from 'rxjs';
-import { INTERACTION_QUERY_SERVICE_NAME } from '@volontariapp/contracts-nest';
+import {
+  INTERACTION_QUERY_SERVICE_NAME,
+  PARTICIPATION_QUERY_SERVICE_NAME,
+} from '@volontariapp/contracts-nest';
 import type { Metadata } from '@grpc/grpc-js';
 import { createMock } from '@volontariapp/testing';
 
@@ -12,15 +15,21 @@ describe('SocialInteractionClient', () => {
   let client: SocialInteractionClient;
   let mockClientGrpc: jest.Mocked<ClientGrpc>;
   let mockQueryService: { adminGetUserLikes: jest.Mock };
+  let mockParticipationQueryService: { adminGetUserWishEvent: jest.Mock };
   let mockJwtService: jest.Mocked<JwtService>;
 
   beforeEach(() => {
     mockQueryService = {
       adminGetUserLikes: jest.fn(),
     };
+    mockParticipationQueryService = {
+      adminGetUserWishEvent: jest.fn(),
+    };
 
     mockClientGrpc = createMock<ClientGrpc>();
-    mockClientGrpc.getService.mockReturnValue(mockQueryService);
+    mockClientGrpc.getService
+      .mockReturnValueOnce(mockQueryService)
+      .mockReturnValueOnce(mockParticipationQueryService);
 
     mockJwtService = createMock<JwtService>();
     mockJwtService.signInternal.mockResolvedValue('mock-jwt-token');
@@ -39,9 +48,12 @@ describe('SocialInteractionClient', () => {
     client.onModuleInit();
   });
 
-  it('should initialize query service on module init', () => {
+  it('should initialize query services on module init', () => {
     expect(mockClientGrpc.getService).toHaveBeenCalledWith(
       INTERACTION_QUERY_SERVICE_NAME,
+    );
+    expect(mockClientGrpc.getService).toHaveBeenCalledWith(
+      PARTICIPATION_QUERY_SERVICE_NAME,
     );
   });
 
@@ -78,7 +90,7 @@ describe('SocialInteractionClient', () => {
     expect(calledMetadata.get('x-internal-token')).toEqual(['mock-jwt-token']);
   });
 
-  it('should return 0 when pagination or total is missing in response', async () => {
+  it('should return 0 when pagination or total is missing in response for likes', async () => {
     mockQueryService.adminGetUserLikes.mockReturnValue(
       of({
         ids: [],
@@ -87,6 +99,54 @@ describe('SocialInteractionClient', () => {
     );
 
     const total = await client.getUserLikesCount('user-123');
+
+    expect(total).toBe(0);
+  });
+
+  it('should sign internal token and query adminGetUserWishEvent with pagination 1, 1', async () => {
+    mockParticipationQueryService.adminGetUserWishEvent.mockReturnValue(
+      of({
+        ids: ['event-1'],
+        pagination: {
+          total: 10,
+          page: 1,
+          limit: 1,
+          totalPages: 10,
+        },
+      }),
+    );
+
+    const total = await client.getUserWishEventsCount('user-123');
+
+    expect(total).toBe(10);
+    expect(mockJwtService.signInternal).toHaveBeenCalledWith({
+      id: 'pp-user',
+      role: UserRoles.ADMIN,
+    });
+    expect(
+      mockParticipationQueryService.adminGetUserWishEvent,
+    ).toHaveBeenCalledWith(
+      {
+        userId: 'user-123',
+        pagination: { page: 1, limit: 1 },
+      },
+      expect.any(Object),
+    );
+
+    const calledMetadata = mockParticipationQueryService.adminGetUserWishEvent
+      .mock.calls[0][1] as Metadata;
+    expect(calledMetadata.get('x-internal-token')).toEqual(['mock-jwt-token']);
+  });
+
+  it('should return 0 when pagination or total is missing in response for wishes', async () => {
+    mockParticipationQueryService.adminGetUserWishEvent.mockReturnValue(
+      of({
+        ids: [],
+        pagination: undefined,
+      }),
+    );
+
+    const total = await client.getUserWishEventsCount('user-123');
 
     expect(total).toBe(0);
   });

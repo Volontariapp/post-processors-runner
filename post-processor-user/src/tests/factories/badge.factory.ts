@@ -81,3 +81,30 @@ export function createSocialLikeBadgePayload(
     ...overrides,
   };
 }
+
+export function createEventWishlistBadgeModel(
+  overrides: Partial<BadgeModel> = {},
+): BadgeModel {
+  return {
+    id: 'badge-uuid-4',
+    name: 'Curieux·se',
+    slug: 'EVENT_WISHLIST_COUNT_10',
+    description: 'Wishlist 10 événements',
+    iconPath: '/icons/curious.svg',
+    userBadges: [],
+    ...overrides,
+  };
+}
+
+export function createEventWishlistBadgePayload(
+  overrides: Partial<IBadgePayload> = {},
+): IBadgePayload {
+  return {
+    id: 'badge-uuid-4',
+    name: 'Curieux·se',
+    slug: 'EVENT_WISHLIST_COUNT_10',
+    description: 'Wishlist 10 événements',
+    iconPath: '/icons/curious.svg',
+    ...overrides,
+  };
+}

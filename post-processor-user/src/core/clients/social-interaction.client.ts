@@ -4,9 +4,13 @@ import { Metadata } from '@grpc/grpc-js';
 import { firstValueFrom, type Observable } from 'rxjs';
 import {
   INTERACTION_QUERY_SERVICE_NAME,
+  PARTICIPATION_QUERY_SERVICE_NAME,
   type InteractionQueryServiceClient,
+  type ParticipationQueryServiceClient,
   type AdminGetUserLikesQuery,
   type AdminGetUserLikesResponse,
+  type AdminGetUserWishEventQuery,
+  type AdminGetUserWishEventResponse,
 } from '@volontariapp/contracts-nest';
 import { JwtService, INTERNAL_TOKEN_METADATA_KEY } from '@volontariapp/auth';
 import { UserRoles } from '@volontariapp/shared';
@@ -15,6 +19,7 @@ import { SOCIAL_PACKAGE } from '../../infrastructure/grpc/constants.js';
 
 export interface ISocialInteractionClient {
   getUserLikesCount(userId: string): Promise<number>;
+  getUserWishEventsCount(userId: string): Promise<number>;
 }
 
 interface InteractionQueryServiceClientWithMetadata extends InteractionQueryServiceClient {
@@ -22,6 +27,13 @@ interface InteractionQueryServiceClientWithMetadata extends InteractionQueryServ
     request: AdminGetUserLikesQuery,
     metadata?: Metadata,
   ): Observable<AdminGetUserLikesResponse>;
+}
+
+interface ParticipationQueryServiceClientWithMetadata extends ParticipationQueryServiceClient {
+  adminGetUserWishEvent(
+    request: AdminGetUserWishEventQuery,
+    metadata?: Metadata,
+  ): Observable<AdminGetUserWishEventResponse>;
 }
 
 @Injectable()
@@ -33,6 +45,7 @@ export class SocialInteractionClient
     format: 'json',
   });
   private queryService!: InteractionQueryServiceClientWithMetadata;
+  private participationQueryService!: ParticipationQueryServiceClientWithMetadata;
   private cachedToken?: { token: string; expiresAt: number };
 
   constructor(
@@ -44,6 +57,10 @@ export class SocialInteractionClient
     this.queryService = this.client.getService<InteractionQueryServiceClient>(
       INTERACTION_QUERY_SERVICE_NAME,
     ) as InteractionQueryServiceClientWithMetadata;
+    this.participationQueryService =
+      this.client.getService<ParticipationQueryServiceClient>(
+        PARTICIPATION_QUERY_SERVICE_NAME,
+      ) as ParticipationQueryServiceClientWithMetadata;
     this.logger.log('SocialInteractionClient initialized');
   }
 
@@ -66,6 +83,21 @@ export class SocialInteractionClient
     const metadata = await this.getInternalMetadata();
     const response = await firstValueFrom(
       this.queryService.adminGetUserLikes(
+        {
+          userId,
+          pagination: { page: 1, limit: 1 },
+        },
+        metadata,
+      ),
+    );
+
+    return response.pagination?.total ?? 0;
+  }
+
+  async getUserWishEventsCount(userId: string): Promise<number> {
+    const metadata = await this.getInternalMetadata();
+    const response = await firstValueFrom(
+      this.participationQueryService.adminGetUserWishEvent(
         {
           userId,
           pagination: { page: 1, limit: 1 },

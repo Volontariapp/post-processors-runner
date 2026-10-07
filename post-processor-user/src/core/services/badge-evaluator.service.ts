@@ -82,6 +82,39 @@ export class BadgeEvaluator {
     return this.awardBadge(badge, userId, context);
   }
 
+  async evaluateEventWishlistBadge(
+    userId: string,
+    context?: EvaluationContext,
+  ): Promise<IBadgePayload[]> {
+    const badgeSlug = 'EVENT_WISHLIST_COUNT_10';
+    const badge = await this.getBadgeBySlug(badgeSlug);
+
+    if (!badge) {
+      this.logger.warn(`Badge with slug ${badgeSlug} not found in database`);
+      return [];
+    }
+
+    const alreadyOwned = await this.isBadgeOwned(userId, badge.id, badgeSlug);
+    if (alreadyOwned) {
+      return [];
+    }
+
+    if (!this.socialClient) {
+      throw new Error('SocialClient is not configured in BadgeEvaluator');
+    }
+
+    const totalWishes = await this.socialClient.getUserWishEventsCount(userId);
+    this.logger.info(
+      `User ${userId} has ${String(totalWishes)} total wishes evaluated for badge ${badgeSlug}`,
+    );
+
+    if (totalWishes < 10) {
+      return [];
+    }
+
+    return this.awardBadge(badge, userId, context);
+  }
+
   private async getBadgeBySlug(badgeSlug: string): Promise<BadgeModel | null> {
     const cachedBadge = this.badgeCache.get(badgeSlug);
     if (cachedBadge) {
