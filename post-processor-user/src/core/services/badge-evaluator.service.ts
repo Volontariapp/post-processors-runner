@@ -90,18 +90,20 @@ export class BadgeEvaluator {
       awardedBadges.push(badgePayload);
 
       const eventEntity =
-        EventQueueEntity.createEvent<UserEventMessagingType.USER_BADGE_AWARDED>({
-          type: UserEventMessagingType.USER_BADGE_AWARDED,
-          emitter: 'post-processor-user',
-          emitterId: userId,
-          traceId: context?.traceId,
-          correlationId: context?.correlationId,
-          payload: {
-            userId,
-            badges: [badgePayload],
+        EventQueueEntity.createEvent<UserEventMessagingType.USER_BADGE_AWARDED>(
+          {
+            type: UserEventMessagingType.USER_BADGE_AWARDED,
+            emitter: 'post-processor-user',
+            emitterId: userId,
+            traceId: context?.traceId,
+            correlationId: context?.correlationId,
+            payload: {
+              userId,
+              badges: [badgePayload],
+            },
+            targetServices: [Streams.USER_BADGE_AWARDED],
           },
-          targetServices: [Streams.USER_BADGE_AWARDED],
-        });
+        );
 
       const eventQueueRepo =
         new EventQueueRepository<UserEventMessagingType.USER_BADGE_AWARDED>(

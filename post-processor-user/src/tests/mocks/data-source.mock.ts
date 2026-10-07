@@ -1,5 +1,10 @@
 import { jest } from '@jest/globals';
-import type { DataSource, EntityManager, Repository, ObjectLiteral } from 'typeorm';
+import type {
+  DataSource,
+  EntityManager,
+  Repository,
+  ObjectLiteral,
+} from 'typeorm';
 
 export interface MockRepositories {
   badgeRepo: {
