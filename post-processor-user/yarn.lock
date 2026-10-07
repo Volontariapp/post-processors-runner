@@ -2497,14 +2497,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/auth@npm:3.3.14-snap-726ac83":
-  version: 3.3.14-snap-726ac83
-  resolution: "@volontariapp/auth@npm:3.3.14-snap-726ac83"
+"@volontariapp/auth@npm:3.3.14":
+  version: 3.3.14
+  resolution: "@volontariapp/auth@npm:3.3.14"
   dependencies:
     "@volontariapp/errors": "npm:0.6.3"
     "@volontariapp/errors-nest": "npm:0.13.3"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/shared": "npm:0.10.0-snap-726ac83"
+    "@volontariapp/shared": "npm:0.10.0"
     jose: "npm:^6.2.2"
     reflect-metadata: "npm:^0.2.2"
     rxjs: "npm:^7.8.1"
@@ -2513,7 +2513,7 @@ __metadata:
     "@nestjs/common": ^10.0.0 || ^11.0.0
     "@nestjs/core": ^10.0.0 || ^11.0.0
     "@nestjs/microservices": ^10.0.0 || ^11.0.0
-  checksum: 10c0/217846887d09a45d2355bd61a3cf75d5d2db0d92f51d64964209f9cdf5d4cba24f65b7a59aa56c1ed9afbfae1f584c47dde25e6088ace05e15cbfaa7abb9ebfd
+  checksum: 10c0/ee78a644aa9bde00467efc7dfa558b58189ac64ad21adc8f3e15e09b4c2d94e0bb9b7cb84413a417af14c73c0ab5ed946dd8c6c5a1a94df001bba2f1edf6cff2
   languageName: node
   linkType: hard
 
@@ -2592,40 +2592,40 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/database@npm:3.4.26-snap-726ac83":
-  version: 3.4.26-snap-726ac83
-  resolution: "@volontariapp/database@npm:3.4.26-snap-726ac83"
+"@volontariapp/database@npm:3.4.26, @volontariapp/database@npm:^3.4.26":
+  version: 3.4.26
+  resolution: "@volontariapp/database@npm:3.4.26"
   dependencies:
     "@volontariapp/bridge": "npm:1.0.7"
     "@volontariapp/config": "npm:3.2.3"
     "@volontariapp/errors": "npm:0.6.3"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0-snap-726ac83"
-    "@volontariapp/shared": "npm:0.10.0-snap-726ac83"
+    "@volontariapp/messaging": "npm:2.20.0"
+    "@volontariapp/shared": "npm:0.10.0"
     class-transformer: "npm:^0.5.1"
     class-validator: "npm:^0.14.1"
     pg: "npm:^8.20.0"
     reflect-metadata: "npm:^0.2.2"
   peerDependencies:
     typeorm: ^0.3.28
-  checksum: 10c0/d4a474cfbb8da66dce2c49b9b626c91ee9a37c8509fad0f5f9b86a5bc73af4bf912f977964b3e0b77edbb02e5641d9aa4bc5fdd143e3232fe0b5fbf785f9ea70
+  checksum: 10c0/78ef806c620afc295e03cdbe95363c8434358ca24d38693e17790c82d7207d5300d1391c34763594d907cd70be34c7a031fe2e61ef90d130393c2a1923d97ba1
   languageName: node
   linkType: hard
 
-"@volontariapp/domain-user@npm:2.8.46-snap-726ac83":
-  version: 2.8.46-snap-726ac83
-  resolution: "@volontariapp/domain-user@npm:2.8.46-snap-726ac83"
+"@volontariapp/domain-user@npm:^2.8.46":
+  version: 2.8.46
+  resolution: "@volontariapp/domain-user@npm:2.8.46"
   dependencies:
-    "@volontariapp/auth": "npm:3.3.14-snap-726ac83"
+    "@volontariapp/auth": "npm:3.3.14"
     "@volontariapp/contracts": "npm:4.3.14"
     "@volontariapp/crypto": "npm:0.3.11"
-    "@volontariapp/database": "npm:3.4.26-snap-726ac83"
+    "@volontariapp/database": "npm:3.4.26"
     "@volontariapp/errors": "npm:0.6.3"
     "@volontariapp/errors-nest": "npm:0.13.3"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0-snap-726ac83"
-    "@volontariapp/shared": "npm:0.10.0-snap-726ac83"
-  checksum: 10c0/0f35d241d7b2d50592f603d7d1014ef3ddd5fb8685e37fd54cb2f37ee60b8756651ddf9e04ea01b4edf1942c695c38ceeb9524bb0c9b62f49e671fec742e1f3b
+    "@volontariapp/messaging": "npm:2.20.0"
+    "@volontariapp/shared": "npm:0.10.0"
+  checksum: 10c0/208fe0f0878fb61d015ef08d49c7f8d6d1b16c29d05eb189222411cd2081ff71e44544dc41827e170f0f1a3d584a882e0261a441b5901a6d6da2257fce2edb95
   languageName: node
   linkType: hard
 
@@ -2728,54 +2728,54 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/messaging@npm:2.20.0-snap-726ac83":
-  version: 2.20.0-snap-726ac83
-  resolution: "@volontariapp/messaging@npm:2.20.0-snap-726ac83"
+"@volontariapp/messaging@npm:2.20.0, @volontariapp/messaging@npm:^2.20.0":
+  version: 2.20.0
+  resolution: "@volontariapp/messaging@npm:2.20.0"
   dependencies:
     "@volontariapp/contracts": "npm:4.3.14"
-    "@volontariapp/shared": "npm:0.10.0-snap-726ac83"
-  checksum: 10c0/67e64149ec55ba92ebb610ced5adca6597eba8cff4e246e5e74a8f182b4350bfbee62e0d16ddef45af10d86665cb00674001fdf28bdac6644b0cda3b77648701
+    "@volontariapp/shared": "npm:0.10.0"
+  checksum: 10c0/b15c51d7524231523407e23ee53a6709d9629e15782eac837b7efdb3b66234b0d0f689e0f0ebe50240d3f1de852f3a80aa249c9f802d5e3f70cf2b5e46081318
   languageName: node
   linkType: hard
 
-"@volontariapp/outbox@npm:0.9.63-snap-726ac83":
-  version: 0.9.63-snap-726ac83
-  resolution: "@volontariapp/outbox@npm:0.9.63-snap-726ac83"
+"@volontariapp/outbox@npm:0.9.63, @volontariapp/outbox@npm:^0.9.63":
+  version: 0.9.63
+  resolution: "@volontariapp/outbox@npm:0.9.63"
   dependencies:
     "@volontariapp/config": "npm:3.2.3"
-    "@volontariapp/database": "npm:3.4.26-snap-726ac83"
+    "@volontariapp/database": "npm:3.4.26"
     "@volontariapp/errors": "npm:0.6.3"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0-snap-726ac83"
-    "@volontariapp/shared": "npm:0.10.0-snap-726ac83"
+    "@volontariapp/messaging": "npm:2.20.0"
+    "@volontariapp/shared": "npm:0.10.0"
     "@volontariapp/testing": "npm:1.0.3"
     bullmq: "npm:^5.76.5"
     ioredis: "npm:^5.10.1"
-  checksum: 10c0/78d9034136cb868b5310134671718fc2a407871e904a68fde5fa9101ea77ec480dd217d4f1fa27ca4ae4193dda02af9aa4d21e83cfa8bcb076aba8450a2b7120
+  checksum: 10c0/68e1836f46e9c4531a9b57d4c92c4d69aa7a35d8e5e705847415850668a993f4e3757553a3f7cbd76b0bf6de0c187bdf8145cc509d4148b7990c40630e4f982e
   languageName: node
   linkType: hard
 
-"@volontariapp/post-processors@npm:3.2.30-snap-726ac83":
-  version: 3.2.30-snap-726ac83
-  resolution: "@volontariapp/post-processors@npm:3.2.30-snap-726ac83"
+"@volontariapp/post-processors@npm:^3.2.30":
+  version: 3.2.30
+  resolution: "@volontariapp/post-processors@npm:3.2.30"
   dependencies:
-    "@volontariapp/database": "npm:3.4.26-snap-726ac83"
+    "@volontariapp/database": "npm:3.4.26"
     "@volontariapp/health-check": "npm:1.0.7"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0-snap-726ac83"
-    "@volontariapp/outbox": "npm:0.9.63-snap-726ac83"
-    "@volontariapp/shared": "npm:0.10.0-snap-726ac83"
+    "@volontariapp/messaging": "npm:2.20.0"
+    "@volontariapp/outbox": "npm:0.9.63"
+    "@volontariapp/shared": "npm:0.10.0"
   peerDependencies:
     "@nestjs/common": ^11.0.0
     ioredis: ^5.0.0
-  checksum: 10c0/6d7a390c6157dea407d88b4a88d92ceb43668be64f61793147fc25751279c87bdbbf772aab3b890d7aa9400d3ec7e1cc634a8ddb35e27e265c5e70a67e9504f4
+  checksum: 10c0/ac345d7f1a123807d18b709a3d75c21ccf0395a215f298ab083a66e02f6e561e583e5ba577f33b18795437a7f0576f949250b679a04e1f32a108412c75241b90
   languageName: node
   linkType: hard
 
-"@volontariapp/shared@npm:0.10.0-snap-726ac83":
-  version: 0.10.0-snap-726ac83
-  resolution: "@volontariapp/shared@npm:0.10.0-snap-726ac83"
-  checksum: 10c0/4e1354fd2eec93f05e4688e9e62f2e109cb23a7f659151b5fe17a0b651b61809b07bedb1493caa13ee79be275b963ecddfa4d920cabce5fa71bdc6573a605ddb
+"@volontariapp/shared@npm:0.10.0, @volontariapp/shared@npm:^0.10.0":
+  version: 0.10.0
+  resolution: "@volontariapp/shared@npm:0.10.0"
+  checksum: 10c0/8185f939db0210dfef745c58f27afea3a4b72a8c07c151f3eb28b811e59004d326234790731c4e4752f3bba97274b8b42f86975f76159b9c1ba8a17701b800e3
   languageName: node
   linkType: hard
 
@@ -7093,16 +7093,16 @@ __metadata:
     "@volontariapp/bridge": "npm:^1.0.7"
     "@volontariapp/bridge-nest": "npm:^0.3.18"
     "@volontariapp/config": "npm:^3.2.3"
-    "@volontariapp/database": "npm:3.4.26-snap-726ac83"
-    "@volontariapp/domain-user": "npm:2.8.46-snap-726ac83"
+    "@volontariapp/database": "npm:^3.4.26"
+    "@volontariapp/domain-user": "npm:^2.8.46"
     "@volontariapp/eslint-config": "npm:^2.2.5"
     "@volontariapp/health-check": "npm:^1.0.7"
     "@volontariapp/health-check-nest": "npm:^0.1.38"
     "@volontariapp/logger": "npm:^0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0-snap-726ac83"
-    "@volontariapp/outbox": "npm:0.9.63-snap-726ac83"
-    "@volontariapp/post-processors": "npm:3.2.30-snap-726ac83"
-    "@volontariapp/shared": "npm:0.10.0-snap-726ac83"
+    "@volontariapp/messaging": "npm:^2.20.0"
+    "@volontariapp/outbox": "npm:^0.9.63"
+    "@volontariapp/post-processors": "npm:^3.2.30"
+    "@volontariapp/shared": "npm:^0.10.0"
     "@volontariapp/testing": "npm:^1.0.3"
     axios: "npm:^1.7.9"
     class-transformer: "npm:^0.5.1"
