@@ -14,6 +14,12 @@ import {
 import { PostgresProvider, RedisProvider } from '@volontariapp/bridge';
 import { CustomConfig } from '../config/custom-config.js';
 import { Logger } from '@volontariapp/logger';
+import { BadgeModel, UserBadgeModel, UserModel } from '@volontariapp/domain-user';
+import {
+  EventQueueModel,
+  JobsOutboxModel,
+  JobAuditModel,
+} from '@volontariapp/database';
 
 @Global()
 @Module({})
@@ -28,7 +34,23 @@ export class InfrastructureModule implements OnApplicationShutdown {
     return {
       module: InfrastructureModule,
       imports: [
-        PostgresBridgeModule.register(config.db),
+        PostgresBridgeModule.register({
+          host: config.db.host,
+          port: config.db.port,
+          username: config.db.username,
+          password: config.db.password,
+          database: config.db.database,
+          ssl: config.db.ssl ? { rejectUnauthorized: false } : false,
+          entities: [
+            BadgeModel,
+            UserBadgeModel,
+            UserModel,
+            EventQueueModel,
+            JobsOutboxModel,
+            JobAuditModel,
+          ],
+          synchronize: false,
+        }),
         RedisBridgeModule.register(config.redis),
       ],
       exports: [PostgresBridgeModule, RedisBridgeModule],
