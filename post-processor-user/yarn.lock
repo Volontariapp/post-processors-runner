@@ -2592,15 +2592,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/database@npm:3.4.26, @volontariapp/database@npm:^3.4.26":
-  version: 3.4.26
-  resolution: "@volontariapp/database@npm:3.4.26"
+"@volontariapp/database@npm:3.4.27, @volontariapp/database@npm:^3.4.27":
+  version: 3.4.27
+  resolution: "@volontariapp/database@npm:3.4.27"
   dependencies:
     "@volontariapp/bridge": "npm:1.0.7"
     "@volontariapp/config": "npm:3.2.3"
     "@volontariapp/errors": "npm:0.6.3"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0"
+    "@volontariapp/messaging": "npm:2.20.1"
     "@volontariapp/shared": "npm:0.10.0"
     class-transformer: "npm:^0.5.1"
     class-validator: "npm:^0.14.1"
@@ -2608,24 +2608,24 @@ __metadata:
     reflect-metadata: "npm:^0.2.2"
   peerDependencies:
     typeorm: ^0.3.28
-  checksum: 10c0/78ef806c620afc295e03cdbe95363c8434358ca24d38693e17790c82d7207d5300d1391c34763594d907cd70be34c7a031fe2e61ef90d130393c2a1923d97ba1
+  checksum: 10c0/bc60e5b105f90652e50b2c176faa779881dc4818da86b3c41dcb285c7a3a83f974863e3fc7685a5504ed72c43a12b3731cf695f8c88bb80147ee0b4f5576c3dc
   languageName: node
   linkType: hard
 
-"@volontariapp/domain-user@npm:^2.8.46":
-  version: 2.8.46
-  resolution: "@volontariapp/domain-user@npm:2.8.46"
+"@volontariapp/domain-user@npm:^2.8.47":
+  version: 2.8.47
+  resolution: "@volontariapp/domain-user@npm:2.8.47"
   dependencies:
     "@volontariapp/auth": "npm:3.3.14"
     "@volontariapp/contracts": "npm:4.3.14"
     "@volontariapp/crypto": "npm:0.3.11"
-    "@volontariapp/database": "npm:3.4.26"
+    "@volontariapp/database": "npm:3.4.27"
     "@volontariapp/errors": "npm:0.6.3"
     "@volontariapp/errors-nest": "npm:0.13.3"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0"
+    "@volontariapp/messaging": "npm:2.20.1"
     "@volontariapp/shared": "npm:0.10.0"
-  checksum: 10c0/208fe0f0878fb61d015ef08d49c7f8d6d1b16c29d05eb189222411cd2081ff71e44544dc41827e170f0f1a3d584a882e0261a441b5901a6d6da2257fce2edb95
+  checksum: 10c0/a2e6185df8ae58e95edea08d6704ceb0899ed353fe32ad67440ba21abfd728628d0ca0f72b758c5847c0ff1e2634890914dd1fdd4c5724158676d2ea17c40df5
   languageName: node
   linkType: hard
 
@@ -2728,47 +2728,47 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/messaging@npm:2.20.0, @volontariapp/messaging@npm:^2.20.0":
-  version: 2.20.0
-  resolution: "@volontariapp/messaging@npm:2.20.0"
+"@volontariapp/messaging@npm:2.20.1, @volontariapp/messaging@npm:^2.20.1":
+  version: 2.20.1
+  resolution: "@volontariapp/messaging@npm:2.20.1"
   dependencies:
     "@volontariapp/contracts": "npm:4.3.14"
     "@volontariapp/shared": "npm:0.10.0"
-  checksum: 10c0/b15c51d7524231523407e23ee53a6709d9629e15782eac837b7efdb3b66234b0d0f689e0f0ebe50240d3f1de852f3a80aa249c9f802d5e3f70cf2b5e46081318
+  checksum: 10c0/3b8f710e176ca83d573ef4ab6ea812eb9d3ea4846ea3b17f60cb526c1b2d6c0d38995635eb5729c55a0334440b493640945ac185382e51f14b2816c007459122
   languageName: node
   linkType: hard
 
-"@volontariapp/outbox@npm:0.9.63, @volontariapp/outbox@npm:^0.9.63":
-  version: 0.9.63
-  resolution: "@volontariapp/outbox@npm:0.9.63"
+"@volontariapp/outbox@npm:0.9.64, @volontariapp/outbox@npm:^0.9.64":
+  version: 0.9.64
+  resolution: "@volontariapp/outbox@npm:0.9.64"
   dependencies:
     "@volontariapp/config": "npm:3.2.3"
-    "@volontariapp/database": "npm:3.4.26"
+    "@volontariapp/database": "npm:3.4.27"
     "@volontariapp/errors": "npm:0.6.3"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0"
+    "@volontariapp/messaging": "npm:2.20.1"
     "@volontariapp/shared": "npm:0.10.0"
     "@volontariapp/testing": "npm:1.0.3"
     bullmq: "npm:^5.76.5"
     ioredis: "npm:^5.10.1"
-  checksum: 10c0/68e1836f46e9c4531a9b57d4c92c4d69aa7a35d8e5e705847415850668a993f4e3757553a3f7cbd76b0bf6de0c187bdf8145cc509d4148b7990c40630e4f982e
+  checksum: 10c0/ddb017d7fa9c822842b02019997d9f889d67cb60f8ba9e746882b4ddf8ad2526e28d658ceda8d809199447cffd4df1f467751253d4987e02c2f9d683b88288b4
   languageName: node
   linkType: hard
 
-"@volontariapp/post-processors@npm:^3.2.30":
-  version: 3.2.30
-  resolution: "@volontariapp/post-processors@npm:3.2.30"
+"@volontariapp/post-processors@npm:^3.2.31":
+  version: 3.2.31
+  resolution: "@volontariapp/post-processors@npm:3.2.31"
   dependencies:
-    "@volontariapp/database": "npm:3.4.26"
+    "@volontariapp/database": "npm:3.4.27"
     "@volontariapp/health-check": "npm:1.0.7"
     "@volontariapp/logger": "npm:0.3.0"
-    "@volontariapp/messaging": "npm:2.20.0"
-    "@volontariapp/outbox": "npm:0.9.63"
+    "@volontariapp/messaging": "npm:2.20.1"
+    "@volontariapp/outbox": "npm:0.9.64"
     "@volontariapp/shared": "npm:0.10.0"
   peerDependencies:
     "@nestjs/common": ^11.0.0
     ioredis: ^5.0.0
-  checksum: 10c0/ac345d7f1a123807d18b709a3d75c21ccf0395a215f298ab083a66e02f6e561e583e5ba577f33b18795437a7f0576f949250b679a04e1f32a108412c75241b90
+  checksum: 10c0/15fb7286f7f51e54ae2a24b372d273c5e4b7ba392077d1be10aae4c1837d63805fc603ca4f278deccdbcff14112e06bd83827ada4aceeb560dfe2eed00de6ec2
   languageName: node
   linkType: hard
 
@@ -7093,15 +7093,15 @@ __metadata:
     "@volontariapp/bridge": "npm:^1.0.7"
     "@volontariapp/bridge-nest": "npm:^0.3.18"
     "@volontariapp/config": "npm:^3.2.3"
-    "@volontariapp/database": "npm:^3.4.26"
-    "@volontariapp/domain-user": "npm:^2.8.46"
+    "@volontariapp/database": "npm:^3.4.27"
+    "@volontariapp/domain-user": "npm:^2.8.47"
     "@volontariapp/eslint-config": "npm:^2.2.5"
     "@volontariapp/health-check": "npm:^1.0.7"
     "@volontariapp/health-check-nest": "npm:^0.1.38"
     "@volontariapp/logger": "npm:^0.3.0"
-    "@volontariapp/messaging": "npm:^2.20.0"
-    "@volontariapp/outbox": "npm:^0.9.63"
-    "@volontariapp/post-processors": "npm:^3.2.30"
+    "@volontariapp/messaging": "npm:^2.20.1"
+    "@volontariapp/outbox": "npm:^0.9.64"
+    "@volontariapp/post-processors": "npm:^3.2.31"
     "@volontariapp/shared": "npm:^0.10.0"
     "@volontariapp/testing": "npm:^1.0.3"
     axios: "npm:^1.7.9"
