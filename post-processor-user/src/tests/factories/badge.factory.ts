@@ -54,3 +54,30 @@ export function createCommunityPostBadgePayload(
     ...overrides,
   };
 }
+
+export function createSocialLikeBadgeModel(
+  overrides: Partial<BadgeModel> = {},
+): BadgeModel {
+  return {
+    id: 'badge-uuid-3',
+    name: 'Soutien du cœur',
+    slug: 'SOCIAL_LIKE_COUNT_10',
+    description: 'Liker 10 posts',
+    iconPath: '/icons/heart.svg',
+    userBadges: [],
+    ...overrides,
+  };
+}
+
+export function createSocialLikeBadgePayload(
+  overrides: Partial<IBadgePayload> = {},
+): IBadgePayload {
+  return {
+    id: 'badge-uuid-3',
+    name: 'Soutien du cœur',
+    slug: 'SOCIAL_LIKE_COUNT_10',
+    description: 'Liker 10 posts',
+    iconPath: '/icons/heart.svg',
+    ...overrides,
+  };
+}

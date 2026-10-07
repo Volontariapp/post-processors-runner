@@ -21,5 +21,11 @@
     "idempotencyTtlSeconds": "POST_PROCESSOR_IDEMPOTENCY_TTL_SECONDS",
     "maxRetries": "POST_PROCESSOR_MAX_RETRIES",
     "retryDelayMs": "POST_PROCESSOR_RETRY_DELAY_MS"
+  },
+  "microServices": {
+    "msSocialUrl": "MS_SOCIAL_URL"
+  },
+  "auth": {
+    "internalPrivateKeyPath": "AUTH_INTERNAL_PRIVATE_KEY_PATH"
   }
 }

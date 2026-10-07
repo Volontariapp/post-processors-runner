@@ -1,6 +1,8 @@
 import { Module, type DynamicModule } from '@nestjs/common';
+import { AuthModule } from '@volontariapp/auth';
 import { ConfigModule } from './config/config.module.js';
 import { InfrastructureModule } from './infrastructure/infrastructure.module.js';
+import { GrpcClientModule } from './infrastructure/grpc/grpc-client.module.js';
 import { PostProcessorsModule } from './post-processors/post-processors.module.js';
 import { logger } from './config/config.module.js';
 import { HealthModule } from '@volontariapp/health-check-nest';
@@ -15,6 +17,8 @@ export class AppModule {
       imports: [
         ConfigModule,
         InfrastructureModule.forRoot(config),
+        AuthModule.registerGateway(config.auth),
+        GrpcClientModule,
         TerminusModule.forRoot({}),
         HealthModule.register({
           databases: ['postgres', 'redis'],

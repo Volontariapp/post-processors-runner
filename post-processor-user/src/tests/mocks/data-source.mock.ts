@@ -8,14 +8,14 @@ import type {
 
 export interface MockRepositories {
   badgeRepo: {
-    findOneBy: jest.Mock;
+    findOneBy: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
   };
   userBadgeRepo: {
-    findOneBy: jest.Mock;
+    findOneBy: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
   };
   eventQueueRepo: {
-    create: jest.Mock;
-    save: jest.Mock;
+    create: jest.Mock<(...args: unknown[]) => unknown>;
+    save: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
   };
 }
 
@@ -30,20 +30,24 @@ export function createMockDataSource(): {
     onConflict: jest.Mock;
     orIgnore: jest.Mock;
     returning: jest.Mock;
-    execute: jest.Mock;
+    execute: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
   };
 } {
   const badgeRepo = {
-    findOneBy: jest.fn(),
+    findOneBy: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
   };
 
   const userBadgeRepo = {
-    findOneBy: jest.fn(),
+    findOneBy: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
   };
 
   const eventQueueRepo = {
-    create: jest.fn().mockImplementation((val: unknown) => val),
-    save: jest.fn().mockImplementation((val: unknown) => Promise.resolve(val)),
+    create: jest
+      .fn<(...args: unknown[]) => unknown>()
+      .mockImplementation((val: unknown) => val),
+    save: jest
+      .fn<(...args: unknown[]) => Promise<unknown>>()
+      .mockImplementation((val: unknown) => Promise.resolve(val)),
   };
 
   const queryBuilder = {
@@ -53,7 +57,7 @@ export function createMockDataSource(): {
     onConflict: jest.fn().mockReturnThis(),
     orIgnore: jest.fn().mockReturnThis(),
     returning: jest.fn().mockReturnThis(),
-    execute: jest.fn(),
+    execute: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
   };
 
   const manager = {

@@ -5,5 +5,6 @@ export function createMockBadgeEvaluator(): jest.Mocked<BadgeEvaluator> {
   return {
     evaluateEventHostBadge: jest.fn(),
     evaluateCommunityPostBadge: jest.fn(),
+    evaluateSocialLikeBadge: jest.fn(),
   } as unknown as jest.Mocked<BadgeEvaluator>;
 }

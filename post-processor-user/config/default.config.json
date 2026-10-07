@@ -27,5 +27,12 @@
     "idempotencyTtlSeconds": 86400,
     "maxRetries": 3,
     "retryDelayMs": 1000
+  },
+  "microServices": {
+    "msSocialUrl": "localhost:3000"
+  },
+  "auth": {
+    "internalPrivateKeyPath": "certs/internal.key",
+    "internalExpiresIn": "1h"
   }
 }
