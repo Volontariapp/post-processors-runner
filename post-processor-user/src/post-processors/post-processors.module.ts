@@ -16,17 +16,20 @@ import {
   postCreationSuccessfullBadgeOptionsProvider,
   postLikedBadgeOptionsProvider,
   eventSocialWishedBadgeOptionsProvider,
+  eventFinishedBadgeOptionsProvider,
   JOB_OUTBOX_SUCCESS_POST_PROCESSOR_OPTIONS,
   JOB_OUTBOX_FAILED_POST_PROCESSOR_OPTIONS,
   EVENT_CREATION_SUCCESSFULL_BADGE_POST_PROCESSOR_OPTIONS,
   POST_CREATION_SUCCESSFULL_BADGE_POST_PROCESSOR_OPTIONS,
   POST_LIKED_BADGE_POST_PROCESSOR_OPTIONS,
   EVENT_SOCIAL_WISHED_BADGE_POST_PROCESSOR_OPTIONS,
+  EVENT_FINISHED_BADGE_POST_PROCESSOR_OPTIONS,
 } from './options/index.js';
 import { BadgeEvaluator } from '../core/services/badge-evaluator.service.js';
 import { SocialInteractionClient } from '../core/clients/social-interaction.client.js';
 import { EventCreationSuccessfullBadgePostProcessor } from './events/event-creation-successfull-badge.post-processor.js';
 import { EventSocialWishedBadgePostProcessor } from './events/event-social-wished-badge.post-processor.js';
+import { EventFinishedBadgePostProcessor } from './events/event-finished-badge.post-processor.js';
 import { PostCreationSuccessfullBadgePostProcessor } from './posts/post-creation-successfull-badge.post-processor.js';
 import { PostLikedBadgePostProcessor } from './posts/post-liked-badge.post-processor.js';
 
@@ -38,6 +41,7 @@ import { PostLikedBadgePostProcessor } from './posts/post-liked-badge.post-proce
     postCreationSuccessfullBadgeOptionsProvider,
     postLikedBadgeOptionsProvider,
     eventSocialWishedBadgeOptionsProvider,
+    eventFinishedBadgeOptionsProvider,
     SocialInteractionClient,
     {
       provide: BadgeEvaluator,
@@ -198,6 +202,28 @@ import { PostLikedBadgePostProcessor } from './posts/post-liked-badge.post-proce
         NestRedisProvider,
         BadgeEvaluator,
         EVENT_SOCIAL_WISHED_BADGE_POST_PROCESSOR_OPTIONS,
+      ],
+    },
+    {
+      provide: EventFinishedBadgePostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        badgeEvaluator: BadgeEvaluator,
+        options: PostProcessorOptions,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new EventFinishedBadgePostProcessor(
+          badgeEvaluator,
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        BadgeEvaluator,
+        EVENT_FINISHED_BADGE_POST_PROCESSOR_OPTIONS,
       ],
     },
   ],

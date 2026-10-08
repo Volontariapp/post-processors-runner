@@ -18,6 +18,8 @@ import {
   BadgeModel,
   UserBadgeModel,
   UserModel,
+  BadgeProgressModel,
+  BadgeProgressEventModel,
 } from '@volontariapp/domain-user';
 import {
   EventQueueModel,
@@ -52,6 +54,8 @@ export class InfrastructureModule implements OnApplicationShutdown {
             EventQueueModel,
             JobsOutboxModel,
             JobAuditModel,
+            BadgeProgressModel,
+            BadgeProgressEventModel,
           ],
           synchronize: false,
         }),

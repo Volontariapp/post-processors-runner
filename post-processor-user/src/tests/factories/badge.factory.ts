@@ -108,3 +108,32 @@ export function createEventWishlistBadgePayload(
     ...overrides,
   };
 }
+
+export function createParticipationBadgeModel(
+  slug: string,
+  overrides: Partial<BadgeModel> = {},
+): BadgeModel {
+  return {
+    id: `badge-uuid-${slug}`,
+    name: slug,
+    slug,
+    description: `Participation badge for ${slug}`,
+    iconPath: `/icons/${slug.toLowerCase()}.svg`,
+    userBadges: [],
+    ...overrides,
+  };
+}
+
+export function createParticipationBadgePayload(
+  slug: string,
+  overrides: Partial<IBadgePayload> = {},
+): IBadgePayload {
+  return {
+    id: `badge-uuid-${slug}`,
+    name: slug,
+    slug,
+    description: `Participation badge for ${slug}`,
+    iconPath: `/icons/${slug.toLowerCase()}.svg`,
+    ...overrides,
+  };
+}

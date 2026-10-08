@@ -17,6 +17,13 @@ export interface MockRepositories {
     create: jest.Mock<(...args: unknown[]) => unknown>;
     save: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
   };
+  badgeProgressRepo: {
+    find: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
+    findBy: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
+    findOneBy: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
+    create: jest.Mock<(...args: unknown[]) => unknown>;
+    save: jest.Mock<(...args: unknown[]) => Promise<unknown>>;
+  };
 }
 
 export function createMockDataSource(): {
@@ -50,6 +57,22 @@ export function createMockDataSource(): {
       .mockImplementation((val: unknown) => Promise.resolve(val)),
   };
 
+  const badgeProgressRepo = {
+    find: jest
+      .fn<(...args: unknown[]) => Promise<unknown>>()
+      .mockResolvedValue([]),
+    findBy: jest
+      .fn<(...args: unknown[]) => Promise<unknown>>()
+      .mockResolvedValue([]),
+    findOneBy: jest.fn<(...args: unknown[]) => Promise<unknown>>(),
+    create: jest
+      .fn<(...args: unknown[]) => unknown>()
+      .mockImplementation((val: unknown) => val),
+    save: jest
+      .fn<(...args: unknown[]) => Promise<unknown>>()
+      .mockImplementation((val: unknown) => Promise.resolve(val)),
+  };
+
   const queryBuilder = {
     insert: jest.fn().mockReturnThis(),
     into: jest.fn().mockReturnThis(),
@@ -62,7 +85,13 @@ export function createMockDataSource(): {
 
   const manager = {
     createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
-    getRepository: jest.fn().mockReturnValue(eventQueueRepo),
+    getRepository: jest.fn().mockImplementation((entity: unknown) => {
+      const name = (entity as { name?: string }).name;
+      if (name === 'BadgeProgressModel') {
+        return badgeProgressRepo as unknown as Repository<ObjectLiteral>;
+      }
+      return eventQueueRepo as unknown as Repository<ObjectLiteral>;
+    }),
   } as unknown as jest.Mocked<EntityManager>;
 
   const dataSource = {
@@ -72,6 +101,8 @@ export function createMockDataSource(): {
         return badgeRepo as unknown as Repository<ObjectLiteral>;
       if (name === 'UserBadgeModel')
         return userBadgeRepo as unknown as Repository<ObjectLiteral>;
+      if (name === 'BadgeProgressModel')
+        return badgeProgressRepo as unknown as Repository<ObjectLiteral>;
       return eventQueueRepo as unknown as Repository<ObjectLiteral>;
     }),
     transaction: jest.fn().mockImplementation((...args: unknown[]) => {
@@ -87,6 +118,7 @@ export function createMockDataSource(): {
       badgeRepo,
       userBadgeRepo,
       eventQueueRepo,
+      badgeProgressRepo,
     },
     queryBuilder,
   };
