@@ -11,6 +11,8 @@ import {
   type AdminGetUserLikesResponse,
   type AdminGetUserWishEventQuery,
   type AdminGetUserWishEventResponse,
+  type GetEventParticipantsQuery,
+  type GetEventParticipantsResponse,
 } from '@volontariapp/contracts-nest';
 import { JwtService, INTERNAL_TOKEN_METADATA_KEY } from '@volontariapp/auth';
 import { UserRoles } from '@volontariapp/shared';
@@ -20,6 +22,7 @@ import { SOCIAL_PACKAGE } from '../../infrastructure/grpc/constants.js';
 export interface ISocialInteractionClient {
   getUserLikesCount(userId: string): Promise<number>;
   getUserWishEventsCount(userId: string): Promise<number>;
+  getAllEventParticipantIds(eventId: string): Promise<string[]>;
 }
 
 interface InteractionQueryServiceClientWithMetadata extends InteractionQueryServiceClient {
@@ -34,6 +37,10 @@ interface ParticipationQueryServiceClientWithMetadata extends ParticipationQuery
     request: AdminGetUserWishEventQuery,
     metadata?: Metadata,
   ): Observable<AdminGetUserWishEventResponse>;
+  getEventParticipants(
+    request: GetEventParticipantsQuery,
+    metadata?: Metadata,
+  ): Observable<GetEventParticipantsResponse>;
 }
 
 @Injectable()
@@ -107,5 +114,34 @@ export class SocialInteractionClient
     );
 
     return response.pagination?.total ?? 0;
+  }
+
+  async getAllEventParticipantIds(eventId: string): Promise<string[]> {
+    const allIds: string[] = [];
+    let page = 1;
+    const limit = 50;
+    let totalPages = 1;
+
+    do {
+      const metadata = await this.getInternalMetadata();
+      const response = await firstValueFrom(
+        this.participationQueryService.getEventParticipants(
+          {
+            eventId,
+            pagination: { page, limit },
+          },
+          metadata,
+        ),
+      );
+
+      if (response.ids.length > 0) {
+        allIds.push(...response.ids);
+      }
+
+      totalPages = response.pagination?.totalPages ?? 1;
+      page++;
+    } while (page <= totalPages);
+
+    return Array.from(new Set(allIds));
   }
 }

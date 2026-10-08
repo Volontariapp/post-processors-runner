@@ -15,7 +15,10 @@ describe('SocialInteractionClient', () => {
   let client: SocialInteractionClient;
   let mockClientGrpc: jest.Mocked<ClientGrpc>;
   let mockQueryService: { adminGetUserLikes: jest.Mock };
-  let mockParticipationQueryService: { adminGetUserWishEvent: jest.Mock };
+  let mockParticipationQueryService: {
+    adminGetUserWishEvent: jest.Mock;
+    getEventParticipants: jest.Mock;
+  };
   let mockJwtService: jest.Mocked<JwtService>;
 
   beforeEach(() => {
@@ -24,6 +27,7 @@ describe('SocialInteractionClient', () => {
     };
     mockParticipationQueryService = {
       adminGetUserWishEvent: jest.fn(),
+      getEventParticipants: jest.fn(),
     };
 
     mockClientGrpc = createMock<ClientGrpc>();
@@ -164,5 +168,65 @@ describe('SocialInteractionClient', () => {
 
     expect(mockJwtService.signInternal).toHaveBeenCalledTimes(1);
     expect(mockQueryService.adminGetUserLikes).toHaveBeenCalledTimes(2);
+  });
+
+  describe('getAllEventParticipantIds', () => {
+    it('should paginate through all pages and collect unique participant IDs', async () => {
+      mockParticipationQueryService.getEventParticipants
+        .mockReturnValueOnce(
+          of({
+            ids: ['user-1', 'user-2'],
+            pagination: { page: 1, limit: 50, total: 3, totalPages: 2 },
+          }),
+        )
+        .mockReturnValueOnce(
+          of({
+            ids: ['user-3', 'user-2'], // includes duplicate user-2
+            pagination: { page: 2, limit: 50, total: 3, totalPages: 2 },
+          }),
+        );
+
+      const participantIds =
+        await client.getAllEventParticipantIds('event-abc');
+
+      expect(participantIds).toEqual(['user-1', 'user-2', 'user-3']);
+      expect(
+        mockParticipationQueryService.getEventParticipants,
+      ).toHaveBeenCalledTimes(2);
+      expect(
+        mockParticipationQueryService.getEventParticipants,
+      ).toHaveBeenNthCalledWith(
+        1,
+        {
+          eventId: 'event-abc',
+          pagination: { page: 1, limit: 50 },
+        },
+        expect.any(Object),
+      );
+      expect(
+        mockParticipationQueryService.getEventParticipants,
+      ).toHaveBeenNthCalledWith(
+        2,
+        {
+          eventId: 'event-abc',
+          pagination: { page: 2, limit: 50 },
+        },
+        expect.any(Object),
+      );
+    });
+
+    it('should return empty array if no participants found', async () => {
+      mockParticipationQueryService.getEventParticipants.mockReturnValueOnce(
+        of({
+          ids: [],
+          pagination: { page: 1, limit: 50, total: 0, totalPages: 1 },
+        }),
+      );
+
+      const participantIds =
+        await client.getAllEventParticipantIds('event-xyz');
+
+      expect(participantIds).toEqual([]);
+    });
   });
 });

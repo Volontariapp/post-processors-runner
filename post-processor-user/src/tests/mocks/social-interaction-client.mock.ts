@@ -5,5 +5,7 @@ export function createMockSocialInteractionClient(): jest.Mocked<ISocialInteract
   return {
     getUserLikesCount: jest.fn<() => Promise<number>>(),
     getUserWishEventsCount: jest.fn<() => Promise<number>>(),
+    getAllEventParticipantIds:
+      jest.fn<(eventId: string) => Promise<string[]>>(),
   };
 }
