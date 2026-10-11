@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   UserModel,
   BadgeModel,
+  UserBadgeModel,
   UserService,
   BadgeService,
   PostgresUserRepository,
@@ -11,7 +12,7 @@ import {
 } from '@volontariapp/domain-user';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserModel, BadgeModel])],
+  imports: [TypeOrmModule.forFeature([UserModel, BadgeModel, UserBadgeModel])],
   providers: [
     {
       provide: EMAIL_ENCRYPTION_SECRET,
