@@ -14,6 +14,8 @@ export class AddCorrelationIdToEventQueue1781000000000 implements MigrationInter
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`DROP INDEX "IDX_event_queue_correlation_id"`);
-    await queryRunner.query(`ALTER TABLE "event_queue" DROP COLUMN "correlation_id"`);
+    await queryRunner.query(
+      `ALTER TABLE "event_queue" DROP COLUMN "correlation_id"`,
+    );
   }
 }

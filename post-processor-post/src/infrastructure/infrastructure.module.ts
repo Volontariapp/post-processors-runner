@@ -15,6 +15,8 @@ import { PostgresProvider, RedisProvider } from '@volontariapp/bridge';
 import { CustomConfig } from '../config/custom-config.js';
 import { Logger } from '@volontariapp/logger';
 
+import { TypeOrmModule } from '@nestjs/typeorm';
+
 @Global()
 @Module({})
 export class InfrastructureModule implements OnApplicationShutdown {
@@ -30,8 +32,19 @@ export class InfrastructureModule implements OnApplicationShutdown {
       imports: [
         PostgresBridgeModule.register(config.db),
         RedisBridgeModule.register(config.redis),
+        TypeOrmModule.forRoot({
+          type: 'postgres',
+          host: config.db.host,
+          port: config.db.port,
+          username: config.db.username,
+          password: config.db.password,
+          database: config.db.database,
+          ssl: config.db.ssl ? { rejectUnauthorized: false } : false,
+          autoLoadEntities: true,
+          synchronize: false,
+        }),
       ],
-      exports: [PostgresBridgeModule, RedisBridgeModule],
+      exports: [PostgresBridgeModule, RedisBridgeModule, TypeOrmModule],
     };
   }
 

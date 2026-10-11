@@ -4,3 +4,4 @@ export * from './job-outbox-failure-options.js';
 export * from './event-created-options.js';
 export * from './event-creation-failed-options.js';
 export * from './event-creation-successfull-options.js';
+export * from './user-deleted-options.js';

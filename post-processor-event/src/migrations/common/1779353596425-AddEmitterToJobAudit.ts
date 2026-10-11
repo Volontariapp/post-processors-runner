@@ -4,10 +4,18 @@ export class AddEmitterToJobAudit1779353596425 implements MigrationInterface {
   name = 'AddEmitterToJobAudit1779353596425';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "job_audit" ADD "emitter" character varying(100)`);
-    await queryRunner.query(`UPDATE "job_audit" SET "emitter" = 'unknown' WHERE "emitter" IS NULL`);
-    await queryRunner.query(`ALTER TABLE "job_audit" ALTER COLUMN "emitter" SET NOT NULL`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_c0816b9c349e6faef069e518d5"`);
+    await queryRunner.query(
+      `ALTER TABLE "job_audit" ADD "emitter" character varying(100)`,
+    );
+    await queryRunner.query(
+      `UPDATE "job_audit" SET "emitter" = 'unknown' WHERE "emitter" IS NULL`,
+    );
+    await queryRunner.query(
+      `ALTER TABLE "job_audit" ALTER COLUMN "emitter" SET NOT NULL`,
+    );
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_c0816b9c349e6faef069e518d5"`,
+    );
     await queryRunner.query(
       `ALTER TABLE "job_audit" ALTER COLUMN "worker_id" TYPE character varying(100)`,
     );
@@ -17,7 +25,9 @@ export class AddEmitterToJobAudit1779353596425 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX "public"."IDX_c0816b9c349e6faef069e518d5"`);
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_c0816b9c349e6faef069e518d5"`,
+    );
     await queryRunner.query(
       `ALTER TABLE "job_audit" ALTER COLUMN "worker_id" TYPE character varying(255)`,
     );
