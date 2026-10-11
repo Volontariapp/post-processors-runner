@@ -17,7 +17,10 @@ describe('EventCreationSuccessfullPostProcessor', () => {
 
   beforeEach(() => {
     mockEventRepository = {
-      metadata: { primaryColumns: [{ propertyName: 'id' }], name: 'EventModel' },
+      metadata: {
+        primaryColumns: [{ propertyName: 'id' }],
+        name: 'EventModel',
+      },
       update: jest.fn().mockResolvedValue({ affected: 1 } as never),
     };
 
