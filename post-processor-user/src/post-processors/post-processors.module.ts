@@ -24,6 +24,8 @@ import {
   POST_LIKED_BADGE_POST_PROCESSOR_OPTIONS,
   EVENT_SOCIAL_WISHED_BADGE_POST_PROCESSOR_OPTIONS,
   EVENT_FINISHED_BADGE_POST_PROCESSOR_OPTIONS,
+  userDeletionSuccessOptionsProvider,
+  USER_DELETION_SUCCESS_POST_PROCESSOR_OPTIONS,
 } from './options/index.js';
 import { BadgeEvaluator } from '../core/services/badge-evaluator.service.js';
 import { SocialInteractionClient } from '../core/clients/social-interaction.client.js';
@@ -32,8 +34,12 @@ import { EventSocialWishedBadgePostProcessor } from './events/event-social-wishe
 import { EventFinishedBadgePostProcessor } from './events/event-finished-badge.post-processor.js';
 import { PostCreationSuccessfullBadgePostProcessor } from './posts/post-creation-successfull-badge.post-processor.js';
 import { PostLikedBadgePostProcessor } from './posts/post-liked-badge.post-processor.js';
+import { UserDeletionSuccessPostProcessor } from './users/user-deletion-success.post-processor.js';
+import { DomainUserModule } from '../domain/domain-user.module.js';
+import { UserService } from '@volontariapp/domain-user';
 
 @Module({
+  imports: [DomainUserModule],
   providers: [
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
@@ -224,6 +230,29 @@ import { PostLikedBadgePostProcessor } from './posts/post-liked-badge.post-proce
         NestRedisProvider,
         BadgeEvaluator,
         EVENT_FINISHED_BADGE_POST_PROCESSOR_OPTIONS,
+      ],
+    },
+    userDeletionSuccessOptionsProvider,
+    {
+      provide: UserDeletionSuccessPostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        userService: UserService,
+        options: PostProcessorOptions,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new UserDeletionSuccessPostProcessor(
+          userService,
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        UserService,
+        USER_DELETION_SUCCESS_POST_PROCESSOR_OPTIONS,
       ],
     },
   ],

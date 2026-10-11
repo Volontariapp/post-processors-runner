@@ -8,6 +8,8 @@ export class AddUpdatedByToRequirements1779555000001 implements MigrationInterfa
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TABLE "requirements" DROP COLUMN "updatedBy"`);
+    await queryRunner.query(
+      `ALTER TABLE "requirements" DROP COLUMN "updatedBy"`,
+    );
   }
 }

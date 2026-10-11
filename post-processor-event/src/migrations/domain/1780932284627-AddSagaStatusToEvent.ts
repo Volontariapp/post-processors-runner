@@ -10,7 +10,9 @@ export class AddSagaStatusToEvent1780932284627 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "events" ADD "saga_status" "public"."events_saga_status_enum" NOT NULL DEFAULT 'PENDING'`,
     );
-    await queryRunner.query(`CREATE INDEX "IDX_events_saga_status" ON "events" ("saga_status")`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_events_saga_status" ON "events" ("saga_status")`,
+    );
     await queryRunner.query(`UPDATE "events" SET "saga_status" = 'DONE'`);
   }
 

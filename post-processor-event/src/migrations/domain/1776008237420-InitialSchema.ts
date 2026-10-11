@@ -66,11 +66,19 @@ export class InitialSchema1776008237420 implements MigrationInterface {
     await queryRunner.query(
       `ALTER TABLE "event_tags" DROP CONSTRAINT "FK_2125cdd476172e1742b23b8658e"`,
     );
-    await queryRunner.query(`DROP INDEX "public"."IDX_812e6e81386d374b79fa39b6a4"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_94fb974ea3a82c4aaea84706cd"`);
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_812e6e81386d374b79fa39b6a4"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_94fb974ea3a82c4aaea84706cd"`,
+    );
     await queryRunner.query(`DROP TABLE "event_requirements"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_a5a1c5b8a419a36959425e9757"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_2125cdd476172e1742b23b8658"`);
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_a5a1c5b8a419a36959425e9757"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_2125cdd476172e1742b23b8658"`,
+    );
     await queryRunner.query(`DROP TABLE "event_tags"`);
     await queryRunner.query(`DROP TABLE "events"`);
     await queryRunner.query(`DROP TYPE "public"."events_state_enum"`);

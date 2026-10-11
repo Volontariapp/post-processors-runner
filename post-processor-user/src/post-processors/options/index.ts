@@ -6,3 +6,4 @@ export * from './post-creation-successfull-badge-options.js';
 export * from './post-liked-badge-options.js';
 export * from './event-social-wished-badge-options.js';
 export * from './event-finished-badge-options.js';
+export * from './user-deletion-success-options.js';

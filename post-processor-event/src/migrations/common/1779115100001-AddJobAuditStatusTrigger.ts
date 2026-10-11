@@ -43,7 +43,11 @@ export class AddJobAuditStatusTrigger1779115100001 implements MigrationInterface
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TRIGGER IF EXISTS job_audit_status_trigger ON job_audit;`);
-    await queryRunner.query(`DROP FUNCTION IF EXISTS notify_job_audit_status_change() CASCADE;`);
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS job_audit_status_trigger ON job_audit;`,
+    );
+    await queryRunner.query(
+      `DROP FUNCTION IF EXISTS notify_job_audit_status_change() CASCADE;`,
+    );
   }
 }

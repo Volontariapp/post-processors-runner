@@ -17,6 +17,10 @@ describe('EventCreationSuccessfullPostProcessor', () => {
 
   beforeEach(() => {
     mockEventRepository = {
+      metadata: {
+        primaryColumns: [{ propertyName: 'id' }],
+        name: 'EventModel',
+      },
       update: jest.fn().mockResolvedValue({ affected: 1 } as never),
     };
 
@@ -40,6 +44,10 @@ describe('EventCreationSuccessfullPostProcessor', () => {
       mockRedisDriver,
       mockOptions,
     );
+    Object.defineProperty(postProcessor, 'eventRepository', {
+      value: mockEventRepository,
+      writable: true,
+    });
 
     const mockLogger = {
       log: jest.fn(),

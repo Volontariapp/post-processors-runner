@@ -22,10 +22,18 @@ export class AddJobAudit1779114963391 implements MigrationInterface {
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP INDEX "public"."IDX_97856738d27cf25a03a19858f9"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_fde22585be17fba51745a56ea1"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_c0816b9c349e6faef069e518d5"`);
-    await queryRunner.query(`DROP INDEX "public"."IDX_6dc48bc8128876ec2584ca468f"`);
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_97856738d27cf25a03a19858f9"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_fde22585be17fba51745a56ea1"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_c0816b9c349e6faef069e518d5"`,
+    );
+    await queryRunner.query(
+      `DROP INDEX "public"."IDX_6dc48bc8128876ec2584ca468f"`,
+    );
     await queryRunner.query(`DROP TABLE "job_audit"`);
   }
 }

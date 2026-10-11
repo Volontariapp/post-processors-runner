@@ -4,7 +4,9 @@ export class UpdateEventTriggerOnlyOnUpdate1779900000000 implements MigrationInt
   name = 'UpdateEventTriggerOnlyOnUpdate1779900000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TRIGGER IF EXISTS events_event_queue_trigger ON events;`);
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS events_event_queue_trigger ON events;`,
+    );
     await queryRunner.query(`
       CREATE TRIGGER events_event_queue_trigger
       AFTER UPDATE ON events
@@ -13,7 +15,9 @@ export class UpdateEventTriggerOnlyOnUpdate1779900000000 implements MigrationInt
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`DROP TRIGGER IF EXISTS events_event_queue_trigger ON events;`);
+    await queryRunner.query(
+      `DROP TRIGGER IF EXISTS events_event_queue_trigger ON events;`,
+    );
     await queryRunner.query(`
       CREATE TRIGGER events_event_queue_trigger
       AFTER INSERT OR UPDATE OR DELETE ON events

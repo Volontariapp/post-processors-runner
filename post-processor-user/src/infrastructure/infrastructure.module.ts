@@ -5,6 +5,7 @@ import {
   type OnApplicationShutdown,
   Inject,
 } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import {
   PostgresBridgeModule,
   RedisBridgeModule,
@@ -60,8 +61,19 @@ export class InfrastructureModule implements OnApplicationShutdown {
           synchronize: false,
         }),
         RedisBridgeModule.register(config.redis),
+        TypeOrmModule.forRoot({
+          type: 'postgres',
+          host: config.db.host,
+          port: config.db.port,
+          username: config.db.username,
+          password: config.db.password,
+          database: config.db.database,
+          ssl: config.db.ssl ? { rejectUnauthorized: false } : false,
+          autoLoadEntities: true,
+          synchronize: false,
+        }),
       ],
-      exports: [PostgresBridgeModule, RedisBridgeModule],
+      exports: [PostgresBridgeModule, RedisBridgeModule, TypeOrmModule],
     };
   }
 

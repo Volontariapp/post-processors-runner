@@ -80,7 +80,9 @@ export class AddTargetServicesToEventQueue1777985367963 implements MigrationInte
     const table = await queryRunner.getTable('event_queue');
     const hasTargetServices = table?.findColumnByName('target_services');
     if (hasTargetServices) {
-      await queryRunner.query(`ALTER TABLE "event_queue" DROP COLUMN "target_services"`);
+      await queryRunner.query(
+        `ALTER TABLE "event_queue" DROP COLUMN "target_services"`,
+      );
     }
   }
 }

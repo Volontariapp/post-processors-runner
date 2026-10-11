@@ -4,13 +4,16 @@ import { SocialUserService, UserId } from '@volontariapp/domain-social';
 import type {
   BatchEventItem,
   PostProcessorOptions,
+  ParseResult,
 } from '@volontariapp/post-processors';
 import type { Redis } from 'ioredis';
 import {
   UserEventMessagingType,
   SocialEventMessagingType,
-  IUserDeleledPayload,
-  IUserSocialDeletedPayload,
+  type IUserDeleledPayload,
+  type IUserSocialDeletedPayload,
+  type IUserSocialDeletionFailedPayload,
+  type StreamEvent,
 } from '@volontariapp/messaging';
 import {
   databaseMapper,
@@ -32,51 +35,50 @@ export class UserDeletedPostProcessor extends BatchPostProcessor<UserEventMessag
     const queueEntities: EventQueueEntity<SocialEventMessagingType.USER_SOCIAL_DELETED>[] =
       [];
 
-    await Promise.all(
-      events.map(async ({ event, messageId }) => {
-        const payload: IUserDeleledPayload = event.payload.after;
+    for (const { event, messageId } of events) {
+      const payload: IUserDeleledPayload = event.payload.after;
 
-        if (!payload.id) {
-          this.logger.error('Invalid payload for USER_DELETED: missing id', {
-            messageId,
-            payload: event.payload,
-          });
-          return;
-        }
+      if (!payload.id) {
+        this.logger.error('Invalid payload for USER_DELETED: missing id', {
+          messageId,
+          payload: event.payload,
+        });
+        continue;
+      }
 
-        try {
-          await this.socialUserService.deleteUser(new UserId(payload.id));
-          this.logger.info('Successfully deleted social user node', {
-            messageId,
-            userId: payload.id,
-          });
+      try {
+        await this.socialUserService.purgeUser(new UserId(payload.id));
+        this.logger.info('Successfully purged social user node', {
+          messageId,
+          userId: payload.id,
+        });
 
-          const payloadSocialEvent: IUserSocialDeletedPayload = {
-            userId: payload.id,
-          };
+        const payloadSocialEvent: IUserSocialDeletedPayload = {
+          userId: payload.id,
+        };
 
-          const queueEntity =
-            EventQueueEntity.createEvent<SocialEventMessagingType.USER_SOCIAL_DELETED>(
-              {
-                type: SocialEventMessagingType.USER_SOCIAL_DELETED,
-                emitter: event.emitter,
-                emitterId: event.emitterId,
-                traceId: event.traceId,
-                correlationId: event.correlationId,
-                payload: payloadSocialEvent,
-                targetServices: [Streams.WS_USER_DELETED_FEEDBACK],
-              },
-            );
+        const queueEntity =
+          EventQueueEntity.createEvent<SocialEventMessagingType.USER_SOCIAL_DELETED>(
+            {
+              type: SocialEventMessagingType.USER_SOCIAL_DELETED,
+              emitter: event.emitter,
+              emitterId: event.emitterId,
+              traceId: event.traceId,
+              correlationId: event.correlationId,
+              payload: payloadSocialEvent,
+              targetServices: [Streams.WS_USER_DELETED_FEEDBACK],
+            },
+          );
 
-          queueEntities.push(queueEntity);
-        } catch (error) {
-          this.logger.error('Error processing USER_DELETED', error, {
-            messageId,
-            payload: event.payload,
-          });
-        }
-      }),
-    );
+        queueEntities.push(queueEntity);
+      } catch (error) {
+        this.logger.error('Error processing USER_DELETED', error, {
+          messageId,
+          userId: payload.id,
+        });
+        throw error;
+      }
+    }
 
     if (queueEntities.length > 0) {
       try {
@@ -98,7 +100,65 @@ export class UserDeletedPostProcessor extends BatchPostProcessor<UserEventMessag
           'Error batch inserting USER_DELETED into event_queue',
           error,
         );
+        throw error;
       }
+    }
+  }
+
+  protected override async sendMessageToDlq(
+    messageId: string,
+    originalPayload: ParseResult,
+    error: string,
+  ): Promise<void> {
+    await super.sendMessageToDlq(messageId, originalPayload, error);
+
+    if (!originalPayload.success) {
+      this.logger.warn(
+        'Original payload failed to parse, cannot send WS feedback',
+        { messageId },
+      );
+      return;
+    }
+
+    try {
+      const event = JSON.parse(
+        originalPayload.payload,
+      ) as StreamEvent<IUserDeleledPayload>;
+      const payload: IUserDeleledPayload = event.payload.after;
+
+      const failPayload: IUserSocialDeletionFailedPayload = {
+        userId: payload.id,
+        errorReason: error,
+      };
+
+      const queueEntity =
+        EventQueueEntity.createEvent<SocialEventMessagingType.USER_SOCIAL_DELETION_FAILED>(
+          {
+            type: SocialEventMessagingType.USER_SOCIAL_DELETION_FAILED,
+            emitter: event.emitter,
+            emitterId: event.emitterId,
+            traceId: event.traceId,
+            correlationId: event.correlationId,
+            payload: failPayload,
+            targetServices: [Streams.WS_USER_DELETED_FEEDBACK],
+          },
+        );
+
+      const repo =
+        new EventQueueRepository<SocialEventMessagingType.USER_SOCIAL_DELETION_FAILED>(
+          this.typeormRepository,
+        );
+      await new EventQueueWriter(this.logger, repo).createMany([queueEntity]);
+
+      this.logger.info('Inserted WS failure feedback event into event_queue', {
+        messageId,
+      });
+    } catch (parseError) {
+      this.logger.error(
+        'Failed to parse original payload for WS failure feedback',
+        parseError,
+        { messageId },
+      );
     }
   }
 
