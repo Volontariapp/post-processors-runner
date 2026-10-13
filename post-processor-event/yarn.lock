@@ -4071,7 +4071,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/monitoring@npm:2.2.0":
+"@volontariapp/monitoring@npm:^2.2.0":
   version: 2.2.0
   resolution: "@volontariapp/monitoring@npm:2.2.0"
   dependencies:
@@ -8597,7 +8597,7 @@ __metadata:
     "@volontariapp/health-check-nest": "npm:^0.1.38"
     "@volontariapp/logger": "npm:^0.3.0"
     "@volontariapp/messaging": "npm:^2.25.0"
-    "@volontariapp/monitoring": "npm:2.2.0"
+    "@volontariapp/monitoring": "npm:^2.2.0"
     "@volontariapp/outbox": "npm:^0.10.2"
     "@volontariapp/post-processors": "npm:^3.3.0"
     "@volontariapp/shared": "npm:^0.14.0"
