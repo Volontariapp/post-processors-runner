@@ -11,6 +11,7 @@ import {
   databaseMapper,
   EventQueueEntity,
   EventQueueModel,
+  type EventTraceContext,
 } from '@volontariapp/database';
 import { EventQueueRepository } from '@volontariapp/outbox';
 import {
@@ -41,10 +42,7 @@ export const BADGE_PROGRESS_METRICS = {
   EVENTS_FINISHED_ECOLOGY: 'EVENTS_FINISHED_ECOLOGY',
 } as const;
 
-export interface EvaluationContext {
-  correlationId?: string;
-  traceId?: string;
-}
+export type EvaluationContext = EventTraceContext;
 
 export class BadgeEvaluator {
   private readonly logger = new Logger({
@@ -61,21 +59,21 @@ export class BadgeEvaluator {
 
   async evaluateEventHostBadge(
     userId: string,
-    context?: EvaluationContext,
+    context: EvaluationContext,
   ): Promise<IBadgePayload[]> {
     return this.evaluateBadge('EVENT_HOST_COUNT_1', userId, context);
   }
 
   async evaluateCommunityPostBadge(
     userId: string,
-    context?: EvaluationContext,
+    context: EvaluationContext,
   ): Promise<IBadgePayload[]> {
     return this.evaluateBadge('COMMUNITY_POST_COUNT_1', userId, context);
   }
 
   async evaluateSocialLikeBadge(
     userId: string,
-    context?: EvaluationContext,
+    context: EvaluationContext,
   ): Promise<IBadgePayload[]> {
     const badgeSlug = 'SOCIAL_LIKE_COUNT_10';
     const badge = await this.getBadgeBySlug(badgeSlug);
@@ -108,7 +106,7 @@ export class BadgeEvaluator {
 
   async evaluateEventWishlistBadge(
     userId: string,
-    context?: EvaluationContext,
+    context: EvaluationContext,
   ): Promise<IBadgePayload[]> {
     const badgeSlug = 'EVENT_WISHLIST_COUNT_10';
     const badge = await this.getBadgeBySlug(badgeSlug);
@@ -142,7 +140,7 @@ export class BadgeEvaluator {
   async evaluateEventFinished(
     eventId: string,
     eventType: EventType,
-    context?: EvaluationContext,
+    context: EvaluationContext,
     participantIdsOverride?: string[],
   ): Promise<Map<string, IBadgePayload[]>> {
     let participantIds = participantIdsOverride;
@@ -177,7 +175,7 @@ export class BadgeEvaluator {
     eventId: string,
     eventType: EventType,
     userId: string,
-    context?: EvaluationContext,
+    context: EvaluationContext,
   ): Promise<IBadgePayload[]> {
     // 1. Fast path: check if user already possesses all 9 participation badges
     let ownsAllBadges = true;
@@ -343,13 +341,12 @@ export class BadgeEvaluator {
       // Step G: Emit ONE outbox event with all awarded badges (decision 3)
       if (awardedBadges.length > 0) {
         const eventEntity =
-          EventQueueEntity.createEvent<UserEventMessagingType.USER_BADGE_AWARDED>(
+          EventQueueEntity.createFollowUp<UserEventMessagingType.USER_BADGE_AWARDED>(
+            context,
             {
               type: UserEventMessagingType.USER_BADGE_AWARDED,
               emitter: 'post-processor-user',
               emitterId: userId,
-              traceId: context?.traceId,
-              correlationId: context?.correlationId,
               payload: {
                 userId,
                 badges: awardedBadges,
@@ -495,7 +492,7 @@ export class BadgeEvaluator {
   private async evaluateBadge(
     badgeSlug: string,
     userId: string,
-    context?: EvaluationContext,
+    context: EvaluationContext,
   ): Promise<IBadgePayload[]> {
     const badge = await this.getBadgeBySlug(badgeSlug);
 
@@ -515,7 +512,7 @@ export class BadgeEvaluator {
   private async awardBadge(
     badge: BadgeModel,
     userId: string,
-    context?: EvaluationContext,
+    context: EvaluationContext,
   ): Promise<IBadgePayload[]> {
     const awardedBadges: IBadgePayload[] = [];
 
@@ -553,13 +550,12 @@ export class BadgeEvaluator {
       awardedBadges.push(badgePayload);
 
       const eventEntity =
-        EventQueueEntity.createEvent<UserEventMessagingType.USER_BADGE_AWARDED>(
+        EventQueueEntity.createFollowUp<UserEventMessagingType.USER_BADGE_AWARDED>(
+          context,
           {
             type: UserEventMessagingType.USER_BADGE_AWARDED,
             emitter: 'post-processor-user',
             emitterId: userId,
-            traceId: context?.traceId,
-            correlationId: context?.correlationId,
             payload: {
               userId,
               badges: [badgePayload],

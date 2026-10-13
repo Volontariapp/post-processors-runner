@@ -19,6 +19,15 @@ import {
 import type { Redis } from 'ioredis';
 import { createMock } from '@volontariapp/testing';
 
+import type { EventTraceContext } from '@volontariapp/database';
+import { SOURCE_TRACEPARENT } from '../factories/trace.factory.js';
+
+const TRACE_CONTEXT: EventTraceContext = {
+  correlationId: 'corr-default',
+  traceId: 'trace-default',
+  traceparent: SOURCE_TRACEPARENT,
+};
+
 describe('BadgeEvaluator', () => {
   let evaluator: BadgeEvaluator;
   let mockEnv: ReturnType<typeof createMockDataSource>;
@@ -41,7 +50,10 @@ describe('BadgeEvaluator', () => {
     it('should return empty array if badge EVENT_HOST_COUNT_1 does not exist in DB', async () => {
       mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(null);
 
-      const result = await evaluator.evaluateEventHostBadge('user-1');
+      const result = await evaluator.evaluateEventHostBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockEnv.repositories.badgeRepo.findOneBy).toHaveBeenCalledWith({
@@ -61,7 +73,10 @@ describe('BadgeEvaluator', () => {
         badgeId: badge.id,
       });
 
-      const result = await evaluator.evaluateEventHostBadge('user-1');
+      const result = await evaluator.evaluateEventHostBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockEnv.repositories.userBadgeRepo.findOneBy).toHaveBeenCalledWith(
@@ -85,6 +100,7 @@ describe('BadgeEvaluator', () => {
       const result = await evaluator.evaluateEventHostBadge('user-1', {
         correlationId: 'corr-123',
         traceId: 'trace-456',
+        traceparent: SOURCE_TRACEPARENT,
       });
 
       expect(result).toHaveLength(1);
@@ -111,6 +127,7 @@ describe('BadgeEvaluator', () => {
           emitterId: 'user-1',
           correlationId: 'corr-123',
           traceId: 'trace-456',
+          traceparent: SOURCE_TRACEPARENT,
           targetServices: [Streams.USER_BADGE_AWARDED],
           payload: {
             after: {
@@ -140,7 +157,10 @@ describe('BadgeEvaluator', () => {
         raw: [],
       });
 
-      const result = await evaluator.evaluateEventHostBadge('user-1');
+      const result = await evaluator.evaluateEventHostBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockEnv.repositories.eventQueueRepo.save).not.toHaveBeenCalled();
@@ -151,7 +171,10 @@ describe('BadgeEvaluator', () => {
     it('should return empty array if badge COMMUNITY_POST_COUNT_1 does not exist in DB', async () => {
       mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(null);
 
-      const result = await evaluator.evaluateCommunityPostBadge('user-1');
+      const result = await evaluator.evaluateCommunityPostBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockEnv.repositories.badgeRepo.findOneBy).toHaveBeenCalledWith({
@@ -171,7 +194,10 @@ describe('BadgeEvaluator', () => {
         badgeId: badge.id,
       });
 
-      const result = await evaluator.evaluateCommunityPostBadge('user-1');
+      const result = await evaluator.evaluateCommunityPostBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockEnv.repositories.userBadgeRepo.findOneBy).toHaveBeenCalledWith(
@@ -195,6 +221,7 @@ describe('BadgeEvaluator', () => {
       const result = await evaluator.evaluateCommunityPostBadge('user-1', {
         correlationId: 'corr-123',
         traceId: 'trace-456',
+        traceparent: SOURCE_TRACEPARENT,
       });
 
       expect(result).toHaveLength(1);
@@ -221,6 +248,7 @@ describe('BadgeEvaluator', () => {
           emitterId: 'user-1',
           correlationId: 'corr-123',
           traceId: 'trace-456',
+          traceparent: SOURCE_TRACEPARENT,
           targetServices: [Streams.USER_BADGE_AWARDED],
           payload: {
             after: {
@@ -249,7 +277,10 @@ describe('BadgeEvaluator', () => {
         raw: [],
       });
 
-      const result = await evaluator.evaluateCommunityPostBadge('user-1');
+      const result = await evaluator.evaluateCommunityPostBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockEnv.repositories.eventQueueRepo.save).not.toHaveBeenCalled();
@@ -284,7 +315,10 @@ describe('BadgeEvaluator', () => {
     it('should return empty array if badge SOCIAL_LIKE_COUNT_10 not found in DB', async () => {
       mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(null);
 
-      const result = await evaluator.evaluateSocialLikeBadge('user-1');
+      const result = await evaluator.evaluateSocialLikeBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockEnv.repositories.badgeRepo.findOneBy).toHaveBeenCalledWith({
@@ -298,7 +332,10 @@ describe('BadgeEvaluator', () => {
       mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
       mockRedis.sismember.mockResolvedValue(1);
 
-      const result = await evaluator.evaluateSocialLikeBadge('user-1');
+      const result = await evaluator.evaluateSocialLikeBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockRedis.sismember).toHaveBeenCalledWith(
@@ -320,7 +357,10 @@ describe('BadgeEvaluator', () => {
         badgeId: badge.id,
       });
 
-      const result = await evaluator.evaluateSocialLikeBadge('user-1');
+      const result = await evaluator.evaluateSocialLikeBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockRedis.sadd).toHaveBeenCalledWith(
@@ -336,7 +376,7 @@ describe('BadgeEvaluator', () => {
       const unconfiguredEvaluator = new BadgeEvaluator(mockEnv.dataSource);
 
       await expect(
-        unconfiguredEvaluator.evaluateSocialLikeBadge('user-1'),
+        unconfiguredEvaluator.evaluateSocialLikeBadge('user-1', TRACE_CONTEXT),
       ).rejects.toThrow('SocialClient is not configured in BadgeEvaluator');
     });
 
@@ -347,7 +387,10 @@ describe('BadgeEvaluator', () => {
       mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue(null);
       mockSocialClient.getUserLikesCount.mockResolvedValue(9);
 
-      const result = await evaluator.evaluateSocialLikeBadge('user-1');
+      const result = await evaluator.evaluateSocialLikeBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockSocialClient.getUserLikesCount).toHaveBeenCalledWith('user-1');
@@ -368,6 +411,7 @@ describe('BadgeEvaluator', () => {
       const result = await evaluator.evaluateSocialLikeBadge('user-1', {
         correlationId: 'corr-like',
         traceId: 'trace-like',
+        traceparent: SOURCE_TRACEPARENT,
       });
 
       expect(result).toHaveLength(1);
@@ -387,6 +431,7 @@ describe('BadgeEvaluator', () => {
           emitterId: 'user-1',
           correlationId: 'corr-like',
           traceId: 'trace-like',
+          traceparent: SOURCE_TRACEPARENT,
           targetServices: [Streams.USER_BADGE_AWARDED],
         }),
         undefined,
@@ -424,7 +469,10 @@ describe('BadgeEvaluator', () => {
     it('should return empty array if badge EVENT_WISHLIST_COUNT_10 does not exist in DB', async () => {
       mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(null);
 
-      const result = await evaluator.evaluateEventWishlistBadge('user-1');
+      const result = await evaluator.evaluateEventWishlistBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockEnv.repositories.badgeRepo.findOneBy).toHaveBeenCalledWith({
@@ -439,7 +487,10 @@ describe('BadgeEvaluator', () => {
       mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
       mockRedis.sismember.mockResolvedValue(1);
 
-      const result = await evaluator.evaluateEventWishlistBadge('user-1');
+      const result = await evaluator.evaluateEventWishlistBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockRedis.sismember).toHaveBeenCalledWith(
@@ -461,7 +512,10 @@ describe('BadgeEvaluator', () => {
         badgeId: badge.id,
       });
 
-      const result = await evaluator.evaluateEventWishlistBadge('user-1');
+      const result = await evaluator.evaluateEventWishlistBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockRedis.sadd).toHaveBeenCalledWith(
@@ -477,7 +531,10 @@ describe('BadgeEvaluator', () => {
       const unconfiguredEvaluator = new BadgeEvaluator(mockEnv.dataSource);
 
       await expect(
-        unconfiguredEvaluator.evaluateEventWishlistBadge('user-1'),
+        unconfiguredEvaluator.evaluateEventWishlistBadge(
+          'user-1',
+          TRACE_CONTEXT,
+        ),
       ).rejects.toThrow('SocialClient is not configured in BadgeEvaluator');
     });
 
@@ -488,7 +545,10 @@ describe('BadgeEvaluator', () => {
       mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue(null);
       mockSocialClient.getUserWishEventsCount.mockResolvedValue(9);
 
-      const result = await evaluator.evaluateEventWishlistBadge('user-1');
+      const result = await evaluator.evaluateEventWishlistBadge(
+        'user-1',
+        TRACE_CONTEXT,
+      );
 
       expect(result).toEqual([]);
       expect(mockSocialClient.getUserWishEventsCount).toHaveBeenCalledWith(
@@ -511,6 +571,7 @@ describe('BadgeEvaluator', () => {
       const result = await evaluator.evaluateEventWishlistBadge('user-1', {
         correlationId: 'corr-wish',
         traceId: 'trace-wish',
+        traceparent: SOURCE_TRACEPARENT,
       });
 
       expect(result).toHaveLength(1);
@@ -530,6 +591,7 @@ describe('BadgeEvaluator', () => {
           emitterId: 'user-1',
           correlationId: 'corr-wish',
           traceId: 'trace-wish',
+          traceparent: SOURCE_TRACEPARENT,
           targetServices: [Streams.USER_BADGE_AWARDED],
         }),
         undefined,
@@ -575,6 +637,7 @@ describe('BadgeEvaluator', () => {
         'event-1',
         EventType.EVENT_TYPE_SOCIAL,
         'user-1',
+        TRACE_CONTEXT,
       );
 
       expect(result).toEqual([]);
@@ -595,6 +658,7 @@ describe('BadgeEvaluator', () => {
         'event-dup',
         EventType.EVENT_TYPE_SOCIAL,
         'user-1',
+        TRACE_CONTEXT,
       );
 
       expect(result).toEqual([]);
@@ -639,7 +703,11 @@ describe('BadgeEvaluator', () => {
         'event-1',
         EventType.EVENT_TYPE_SOCIAL,
         'user-1',
-        { correlationId: 'corr-1', traceId: 'trace-1' },
+        {
+          correlationId: 'corr-1',
+          traceId: 'trace-1',
+          traceparent: SOURCE_TRACEPARENT,
+        },
       );
 
       expect(result).toHaveLength(2);
@@ -735,6 +803,7 @@ describe('BadgeEvaluator', () => {
         'event-5',
         EventType.EVENT_TYPE_ECOLOGY,
         'user-1',
+        TRACE_CONTEXT,
       );
 
       expect(result).toHaveLength(1);
@@ -763,6 +832,7 @@ describe('BadgeEvaluator', () => {
       const resultMap = await evaluator.evaluateEventFinished(
         'event-all',
         EventType.EVENT_TYPE_SOCIAL,
+        TRACE_CONTEXT,
       );
 
       expect(mockSocialClient.getAllEventParticipantIds).toHaveBeenCalledWith(

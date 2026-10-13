@@ -25,6 +25,7 @@ import {
   type IMockEventQueueRepository,
 } from '../mocks/user-deleted.post-processor.mock.js';
 import { UserDeletedFactory } from '../factories/user-deleted.factory.js';
+import { SOURCE_TRACEPARENT } from '../factories/trace.factory.js';
 import type { SocialUserService } from '@volontariapp/domain-social';
 
 describe('UserDeletedPostProcessor', () => {
@@ -81,6 +82,8 @@ describe('UserDeletedPostProcessor', () => {
       const savedEntities = mockEventQueueRepo.save.mock.calls[0][0] as Array<{
         type: string;
         targetServices: string[];
+        correlationId: string;
+        traceparent?: string;
         payload: { after: { userId: string } };
       }>;
 
@@ -92,6 +95,10 @@ describe('UserDeletedPostProcessor', () => {
         Streams.WS_USER_DELETED_FEEDBACK,
       );
       expect(savedEntities[0].payload.after.userId).toBe(userId);
+      expect(savedEntities[0].traceparent).toBe(SOURCE_TRACEPARENT);
+      expect(savedEntities[0].correlationId).toBe(
+        batchItem.event.correlationId,
+      );
     });
 
     it('should rethrow error if socialUserService.purgeUser throws', async () => {
@@ -140,6 +147,8 @@ describe('UserDeletedPostProcessor', () => {
       const savedEntities = mockEventQueueRepo.save.mock.calls[0][0] as Array<{
         type: string;
         targetServices: string[];
+        correlationId: string;
+        traceparent?: string;
         payload: { after: { userId: string; errorReason: string } };
       }>;
 
@@ -151,6 +160,10 @@ describe('UserDeletedPostProcessor', () => {
         Streams.WS_USER_DELETED_FEEDBACK,
       );
       expect(savedEntities[0].payload.after.userId).toBe(userId);
+      expect(savedEntities[0].traceparent).toBe(SOURCE_TRACEPARENT);
+      expect(savedEntities[0].correlationId).toBe(
+        batchItem.event.correlationId,
+      );
       expect(savedEntities[0].payload.after.errorReason).toBe(dlqError);
     });
 

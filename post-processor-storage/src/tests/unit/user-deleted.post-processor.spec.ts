@@ -26,6 +26,8 @@ import {
 } from '../mocks/user-deleted.post-processor.mock.js';
 import { UserDeletedFactory } from '../factories/user-deleted.factory.js';
 
+import { SOURCE_TRACEPARENT } from '../factories/trace.factory.js';
+
 describe('UserDeletedPostProcessor (storage)', () => {
   let postProcessor: UserDeletedPostProcessor;
   let mockFileRepo: IMockFileRepository;
@@ -78,10 +80,12 @@ describe('UserDeletedPostProcessor (storage)', () => {
       const savedEntities = mockEventQueueRepo.save.mock.calls[0][0] as Array<{
         type: string;
         targetServices: string[];
+        traceparent?: string;
         payload: { after: { userId: string } };
       }>;
 
       expect(savedEntities).toHaveLength(1);
+      expect(savedEntities[0].traceparent).toBe(SOURCE_TRACEPARENT);
       expect(savedEntities[0].type).toBe(
         StorageEventMessagingType.USER_STORAGE_DELETED,
       );
@@ -132,10 +136,12 @@ describe('UserDeletedPostProcessor (storage)', () => {
       const savedEntities = mockEventQueueRepo.save.mock.calls[0][0] as Array<{
         type: string;
         targetServices: string[];
+        traceparent?: string;
         payload: { after: { userId: string; errorReason: string } };
       }>;
 
       expect(savedEntities).toHaveLength(1);
+      expect(savedEntities[0].traceparent).toBe(SOURCE_TRACEPARENT);
       expect(savedEntities[0].type).toBe(
         StorageEventMessagingType.USER_STORAGE_DELETION_FAILED,
       );

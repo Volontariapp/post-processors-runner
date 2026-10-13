@@ -53,10 +53,7 @@ export class PostCreationSuccessfullBadgePostProcessor extends BatchPostProcesso
 
         const awarded = await this.badgeEvaluator.evaluateCommunityPostBadge(
           userId,
-          {
-            correlationId: event.correlationId,
-            traceId: event.traceId,
-          },
+          event,
         );
 
         if (awarded.length > 0) {

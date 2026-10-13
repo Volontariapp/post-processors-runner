@@ -8,6 +8,7 @@ import {
 } from '@volontariapp/messaging';
 import { Streams } from '@volontariapp/shared';
 import { EventDeletedFactory } from '../factories/event-deleted.factory.js';
+import { SOURCE_TRACEPARENT } from '../factories/trace.factory.js';
 import {
   createMockParticipationService,
   createMockEventQueueRepository,
@@ -92,6 +93,7 @@ describe('EventDeletedPostProcessor', () => {
         .calls[0][0] as Array<{
         type: string;
         targetServices: string[];
+        traceparent?: string;
         payload: { after: { eventId: string } };
       }>;
 
@@ -103,6 +105,7 @@ describe('EventDeletedPostProcessor', () => {
         Streams.WS_EVENT_DELETED_FEEDBACK,
       );
       expect(savedEntities[0].payload.after.eventId).toBe(payload1.eventId);
+      expect(savedEntities[0].traceparent).toBe(SOURCE_TRACEPARENT);
     });
 
     it('should skip invalid event items missing eventId and process valid ones', async () => {
@@ -177,6 +180,7 @@ describe('EventDeletedPostProcessor', () => {
         .calls[0][0] as Array<{
         type: string;
         targetServices: string[];
+        traceparent?: string;
         payload: { after: { eventId: string } };
       }>;
 
@@ -188,6 +192,7 @@ describe('EventDeletedPostProcessor', () => {
         Streams.WS_EVENT_DELETED_FEEDBACK,
       );
       expect(savedEntities[0].payload.after.eventId).toBe(payload.eventId);
+      expect(savedEntities[0].traceparent).toBe(SOURCE_TRACEPARENT);
     });
 
     it('should log warning and not emit WS feedback when original payload parsing failed', async () => {

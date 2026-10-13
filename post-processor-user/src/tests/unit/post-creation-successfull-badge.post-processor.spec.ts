@@ -8,6 +8,8 @@ import { createMockBadgeEvaluator } from '../mocks/badge-evaluator.mock.js';
 import { createCommunityPostBadgePayload } from '../factories/badge.factory.js';
 import { createPostCreationSuccessfullBatchItem } from '../factories/post-batch-event.factory.js';
 
+import { SOURCE_TRACEPARENT } from '../factories/trace.factory.js';
+
 describe('PostCreationSuccessfullBadgePostProcessor', () => {
   let postProcessor: PostCreationSuccessfullBadgePostProcessor;
   let mockBadgeEvaluator: ReturnType<typeof createMockBadgeEvaluator>;
@@ -93,10 +95,14 @@ describe('PostCreationSuccessfullBadgePostProcessor', () => {
 
       expect(
         mockBadgeEvaluator.evaluateCommunityPostBadge,
-      ).toHaveBeenCalledWith('user-789', {
-        correlationId: 'corr-123',
-        traceId: 'trace-456',
-      });
+      ).toHaveBeenCalledWith(
+        'user-789',
+        expect.objectContaining({
+          correlationId: 'corr-123',
+          traceId: 'trace-456',
+          traceparent: SOURCE_TRACEPARENT,
+        }),
+      );
     });
 
     it('should rethrow error when badgeEvaluator fails', async () => {

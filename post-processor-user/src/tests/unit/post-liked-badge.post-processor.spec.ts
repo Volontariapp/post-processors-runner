@@ -93,10 +93,10 @@ describe('PostLikedBadgePostProcessor', () => {
 
       expect(mockBadgeEvaluator.evaluateSocialLikeBadge).toHaveBeenCalledWith(
         'user-liker-1',
-        {
+        expect.objectContaining({
           correlationId: 'corr-123',
           traceId: 'trace-456',
-        },
+        }),
       );
     });
 
@@ -114,10 +114,10 @@ describe('PostLikedBadgePostProcessor', () => {
 
       expect(mockBadgeEvaluator.evaluateSocialLikeBadge).toHaveBeenCalledWith(
         'user-liker-author',
-        {
+        expect.objectContaining({
           correlationId: 'corr-like-1',
           traceId: undefined,
-        },
+        }),
       );
     });
 

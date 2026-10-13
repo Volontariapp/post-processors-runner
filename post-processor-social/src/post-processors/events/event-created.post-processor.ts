@@ -64,13 +64,12 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
       };
 
       const queueEntity =
-        EventQueueEntity.createEvent<SocialEventMessagingType.EVENT_SOCIAL_CREATED>(
+        EventQueueEntity.createFollowUp<SocialEventMessagingType.EVENT_SOCIAL_CREATED>(
+          event,
           {
             type: SocialEventMessagingType.EVENT_SOCIAL_CREATED,
             emitter: event.emitter,
             emitterId: event.emitterId,
-            traceId: event.traceId,
-            correlationId: event.correlationId,
             payload: payloadSocialEvent,
             targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
           },
