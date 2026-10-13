@@ -62,10 +62,7 @@ export class EventFinishedBadgePostProcessor extends BatchPostProcessor<EventEve
         const awardedMap = await this.badgeEvaluator.evaluateEventFinished(
           eventId,
           eventType,
-          {
-            correlationId: event.correlationId,
-            traceId: event.traceId,
-          },
+          event,
         );
 
         let totalAwarded = 0;

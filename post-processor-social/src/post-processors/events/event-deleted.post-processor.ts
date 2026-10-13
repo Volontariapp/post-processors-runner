@@ -82,13 +82,12 @@ export class EventDeletedPostProcessor extends BatchPostProcessor<EventEventMess
       };
 
       queueEntities.push(
-        EventQueueEntity.createEvent<SocialEventMessagingType.EVENT_SOCIAL_DELETED>(
+        EventQueueEntity.createFollowUp<SocialEventMessagingType.EVENT_SOCIAL_DELETED>(
+          event,
           {
             type: SocialEventMessagingType.EVENT_SOCIAL_DELETED,
             emitter: event.emitter,
             emitterId: event.emitterId,
-            traceId: event.traceId,
-            correlationId: event.correlationId,
             payload: wsPayload,
             targetServices: [Streams.WS_EVENT_DELETED_FEEDBACK],
           },
@@ -144,13 +143,12 @@ export class EventDeletedPostProcessor extends BatchPostProcessor<EventEventMess
       };
 
       const queueEntity =
-        EventQueueEntity.createEvent<SocialEventMessagingType.EVENT_SOCIAL_DELETION_FAILED>(
+        EventQueueEntity.createFollowUp<SocialEventMessagingType.EVENT_SOCIAL_DELETION_FAILED>(
+          event,
           {
             type: SocialEventMessagingType.EVENT_SOCIAL_DELETION_FAILED,
             emitter: event.emitter,
             emitterId: event.emitterId,
-            traceId: event.traceId,
-            correlationId: event.correlationId,
             payload: failPayload,
             targetServices: [Streams.WS_EVENT_DELETED_FEEDBACK],
           },

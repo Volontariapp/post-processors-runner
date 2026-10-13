@@ -160,10 +160,10 @@ describe('EventFinishedBadgePostProcessor', () => {
       expect(mockBadgeEvaluator.evaluateEventFinished).toHaveBeenCalledWith(
         'event-123',
         EventType.EVENT_TYPE_SOCIAL,
-        {
+        expect.objectContaining({
           correlationId: 'corr-123',
           traceId: 'trace-456',
-        },
+        }),
       );
     });
 
@@ -197,10 +197,10 @@ describe('EventFinishedBadgePostProcessor', () => {
       expect(mockBadgeEvaluator.evaluateEventFinished).toHaveBeenCalledWith(
         'event-direct-123',
         EventType.EVENT_TYPE_ECOLOGY,
-        {
+        expect.objectContaining({
           correlationId: 'corr-direct',
           traceId: 'trace-direct',
-        },
+        }),
       );
     });
 

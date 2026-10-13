@@ -1,5 +1,6 @@
 import { SocialEventMessagingType } from '@volontariapp/messaging';
 import type { BatchEventItem } from '@volontariapp/post-processors';
+import { SOURCE_TRACEPARENT } from './trace.factory.js';
 
 export function createEventSocialWishedBatchItem(
   options: {
@@ -20,6 +21,7 @@ export function createEventSocialWishedBatchItem(
       emitter: 'ms-social',
       emitterId: options.emitterId ?? wisherId,
       correlationId: options.correlationId ?? 'corr-wish-1',
+      traceparent: SOURCE_TRACEPARENT,
       traceId: options.traceId,
       version: 1,
       createdAt: new Date().toISOString(),

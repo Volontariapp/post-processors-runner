@@ -110,13 +110,12 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
         postId: payload.postId,
       };
       queueEntities.push(
-        EventQueueEntity.createEvent<SocialEventMessagingType.POST_SOCIAL_CREATED>(
+        EventQueueEntity.createFollowUp<SocialEventMessagingType.POST_SOCIAL_CREATED>(
+          event,
           {
             type: SocialEventMessagingType.POST_SOCIAL_CREATED,
             emitter: event.emitter,
             emitterId: event.emitterId,
-            traceId: event.traceId,
-            correlationId: event.correlationId,
             payload: payloadPostSocialCreated,
             targetServices: [Streams.WS_POST_CREATED_FEEDBACK],
           },
@@ -171,13 +170,12 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
         postId: payload.postId,
       };
       const queueEntity =
-        EventQueueEntity.createEvent<SocialEventMessagingType.POST_SOCIAL_CREATED>(
+        EventQueueEntity.createFollowUp<SocialEventMessagingType.POST_SOCIAL_CREATED>(
+          event,
           {
             type: SocialEventMessagingType.POST_SOCIAL_CREATED,
             emitter: event.emitter,
             emitterId: event.emitterId,
-            traceId: event.traceId,
-            correlationId: event.correlationId,
             payload: payloadPostSocialCreated,
             targetServices: [Streams.WS_POST_CREATED_FEEDBACK],
           },

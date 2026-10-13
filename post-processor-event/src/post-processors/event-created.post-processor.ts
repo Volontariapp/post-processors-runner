@@ -13,8 +13,15 @@ import {
 } from '@volontariapp/domain-event';
 import type { DataSource } from 'typeorm';
 import type { Redis } from 'ioredis';
-import { EventQueueModel } from '@volontariapp/database';
+import {
+  databaseMapper,
+  EventQueueEntity,
+  EventQueueModel,
+} from '@volontariapp/database';
+import { EventQueueRepository } from '@volontariapp/outbox';
 import { Streams } from '@volontariapp/shared';
+
+databaseMapper.registerBidirectional(EventQueueModel, EventQueueEntity);
 
 export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMessagingType.EVENT_CREATED> {
   private readonly geocodingService: GeocodingService;
@@ -77,22 +84,20 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
           });
 
           // Write EVENT_GEOCODED to outbox database (event_queue)
-          const eventQueueRepo = this.db.getRepository(EventQueueModel);
-          await eventQueueRepo.save({
-            type: EventEventMessagingType.EVENT_GEOCODED,
-            emitter: 'ms-event',
-            emitterId: event.emitterId,
-            traceId: event.traceId,
-            correlationId: event.correlationId,
-            version: 1,
-            payload: {
-              before: undefined,
-              after: {
-                eventId,
+          const geocodedEvent =
+            EventQueueEntity.createFollowUp<EventEventMessagingType.EVENT_GEOCODED>(
+              event,
+              {
+                type: EventEventMessagingType.EVENT_GEOCODED,
+                emitter: 'ms-event',
+                emitterId: event.emitterId,
+                payload: { eventId },
+                targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
               },
-            },
-            targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
-          });
+            );
+          await new EventQueueRepository<EventEventMessagingType.EVENT_GEOCODED>(
+            this.db.getRepository(EventQueueModel),
+          ).create(geocodedEvent);
           this.logger.log(
             `Feedback event EVENT_GEOCODED registered in outbox for event ${String(eventId)}`,
           );

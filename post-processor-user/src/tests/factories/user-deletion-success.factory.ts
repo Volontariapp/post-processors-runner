@@ -5,6 +5,7 @@ import {
 } from '@volontariapp/messaging';
 import type { BatchEventItem } from '@volontariapp/post-processors';
 import { randomUUID } from 'crypto';
+import { SOURCE_TRACEPARENT } from './trace.factory.js';
 
 export class UserDeletionSuccessFactory {
   static buildPayload(
@@ -29,6 +30,7 @@ export class UserDeletionSuccessFactory {
       emitterId: payload.userId ?? randomUUID(),
       traceId: randomUUID(),
       correlationId: randomUUID(),
+      traceparent: SOURCE_TRACEPARENT,
       createdAt: new Date().toISOString(),
       payload: {
         before: undefined,

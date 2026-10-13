@@ -8,6 +8,8 @@ import { createMockBadgeEvaluator } from '../mocks/badge-evaluator.mock.js';
 import { createEventWishlistBadgePayload } from '../factories/badge.factory.js';
 import { createEventSocialWishedBatchItem } from '../factories/event-social-wished-batch-event.factory.js';
 
+import { SOURCE_TRACEPARENT } from '../factories/trace.factory.js';
+
 describe('EventSocialWishedBadgePostProcessor', () => {
   let postProcessor: EventSocialWishedBadgePostProcessor;
   let mockBadgeEvaluator: ReturnType<typeof createMockBadgeEvaluator>;
@@ -95,10 +97,14 @@ describe('EventSocialWishedBadgePostProcessor', () => {
 
       expect(
         mockBadgeEvaluator.evaluateEventWishlistBadge,
-      ).toHaveBeenCalledWith('user-wisher-1', {
-        correlationId: 'corr-123',
-        traceId: 'trace-456',
-      });
+      ).toHaveBeenCalledWith(
+        'user-wisher-1',
+        expect.objectContaining({
+          correlationId: 'corr-123',
+          traceId: 'trace-456',
+          traceparent: SOURCE_TRACEPARENT,
+        }),
+      );
     });
 
     it('should fallback to payload.userId if emitterId is missing', async () => {
@@ -115,10 +121,14 @@ describe('EventSocialWishedBadgePostProcessor', () => {
 
       expect(
         mockBadgeEvaluator.evaluateEventWishlistBadge,
-      ).toHaveBeenCalledWith('user-wisher-payload', {
-        correlationId: 'corr-wish-1',
-        traceId: undefined,
-      });
+      ).toHaveBeenCalledWith(
+        'user-wisher-payload',
+        expect.objectContaining({
+          correlationId: 'corr-wish-1',
+          traceId: undefined,
+          traceparent: SOURCE_TRACEPARENT,
+        }),
+      );
     });
 
     it('should rethrow error when badgeEvaluator fails', async () => {

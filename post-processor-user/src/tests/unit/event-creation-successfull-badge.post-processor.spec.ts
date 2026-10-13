@@ -126,10 +126,10 @@ describe('EventCreationSuccessfullBadgePostProcessor', () => {
 
       expect(mockBadgeEvaluator.evaluateEventHostBadge).toHaveBeenCalledWith(
         'user-789',
-        {
+        expect.objectContaining({
           correlationId: 'corr-123',
           traceId: 'trace-456',
-        },
+        }),
       );
     });
 

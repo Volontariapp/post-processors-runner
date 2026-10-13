@@ -1,5 +1,6 @@
 import { PostEventMessagingType } from '@volontariapp/messaging';
 import type { BatchEventItem } from '@volontariapp/post-processors';
+import { SOURCE_TRACEPARENT } from './trace.factory.js';
 
 export function createPostCreationSuccessfullBatchItem(
   options: {
@@ -18,6 +19,7 @@ export function createPostCreationSuccessfullBatchItem(
       emitter: 'ws-service',
       emitterId: options.userId ?? 'emitter-1',
       correlationId: options.correlationId ?? 'corr-1',
+      traceparent: SOURCE_TRACEPARENT,
       traceId: options.traceId,
       version: 1,
       createdAt: new Date().toISOString(),
@@ -51,6 +53,7 @@ export function createPostLikedBatchItem(
       emitter: 'ms-social',
       emitterId: options.emitterId ?? likerId,
       correlationId: options.correlationId ?? 'corr-like-1',
+      traceparent: SOURCE_TRACEPARENT,
       traceId: options.traceId,
       version: 1,
       createdAt: new Date().toISOString(),
