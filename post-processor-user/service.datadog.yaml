@@ -1,0 +1,9 @@
+schema-version: v2.2
+dd-service: post-processor-user
+team: volontariapp
+application: volontariapp
+description: Post-processor du domaine user : consomme les Redis Streams d'événements et applique les effets.
+tier: backend
+type: web
+repos:
+  - url: https://github.com/Volontariapp/post-processors-runner
