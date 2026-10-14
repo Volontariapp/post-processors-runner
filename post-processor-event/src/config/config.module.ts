@@ -6,6 +6,7 @@ import { resolveConfigDirectory } from './resolve-config-directory.js';
 
 const configDir = resolveConfigDirectory();
 export const config = loadConfig(configDir, CustomConfig);
+Logger.setDefaultConfig({ format: config.logger.format });
 export const logger = new Logger({
   context: 'POST-PROCESSOR-EVENT',
   format: config.logger.format,
