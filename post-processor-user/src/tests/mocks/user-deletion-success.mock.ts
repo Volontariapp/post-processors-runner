@@ -15,6 +15,7 @@ export function createMockUserRepository(): IUserRepository {
     findAll: jest.fn<IUserRepository['findAll']>(),
     create: jest.fn<IUserRepository['create']>(),
     update: jest.fn<IUserRepository['update']>(),
+    updateAvatar: jest.fn<IUserRepository['updateAvatar']>(),
     delete: jest.fn<IUserRepository['delete']>(),
     requestDeletionWithUserDeleted:
       jest.fn<IUserRepository['requestDeletionWithUserDeleted']>(),

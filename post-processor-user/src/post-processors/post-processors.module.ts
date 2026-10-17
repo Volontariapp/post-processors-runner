@@ -17,6 +17,7 @@ import {
   postLikedBadgeOptionsProvider,
   eventSocialWishedBadgeOptionsProvider,
   eventFinishedBadgeOptionsProvider,
+  eventFinishedImpactScoreOptionsProvider,
   JOB_OUTBOX_SUCCESS_POST_PROCESSOR_OPTIONS,
   JOB_OUTBOX_FAILED_POST_PROCESSOR_OPTIONS,
   EVENT_CREATION_SUCCESSFULL_BADGE_POST_PROCESSOR_OPTIONS,
@@ -24,14 +25,17 @@ import {
   POST_LIKED_BADGE_POST_PROCESSOR_OPTIONS,
   EVENT_SOCIAL_WISHED_BADGE_POST_PROCESSOR_OPTIONS,
   EVENT_FINISHED_BADGE_POST_PROCESSOR_OPTIONS,
+  EVENT_FINISHED_IMPACT_SCORE_POST_PROCESSOR_OPTIONS,
   userDeletionSuccessOptionsProvider,
   USER_DELETION_SUCCESS_POST_PROCESSOR_OPTIONS,
 } from './options/index.js';
 import { BadgeEvaluator } from '../core/services/badge-evaluator.service.js';
+import { ImpactScoreCrediter } from '../core/services/impact-score-crediter.service.js';
 import { SocialInteractionClient } from '../core/clients/social-interaction.client.js';
 import { EventCreationSuccessfullBadgePostProcessor } from './events/event-creation-successfull-badge.post-processor.js';
 import { EventSocialWishedBadgePostProcessor } from './events/event-social-wished-badge.post-processor.js';
 import { EventFinishedBadgePostProcessor } from './events/event-finished-badge.post-processor.js';
+import { EventFinishedImpactScorePostProcessor } from './events/event-finished-impact-score.post-processor.js';
 import { PostCreationSuccessfullBadgePostProcessor } from './posts/post-creation-successfull-badge.post-processor.js';
 import { PostLikedBadgePostProcessor } from './posts/post-liked-badge.post-processor.js';
 import { UserDeletionSuccessPostProcessor } from './users/user-deletion-success.post-processor.js';
@@ -48,7 +52,19 @@ import { UserService } from '@volontariapp/domain-user';
     postLikedBadgeOptionsProvider,
     eventSocialWishedBadgeOptionsProvider,
     eventFinishedBadgeOptionsProvider,
+    eventFinishedImpactScoreOptionsProvider,
     SocialInteractionClient,
+    {
+      provide: ImpactScoreCrediter,
+      useFactory: async (
+        dbProvider: PostgresProvider,
+        socialClient: SocialInteractionClient,
+      ) => {
+        await dbProvider.connect();
+        return new ImpactScoreCrediter(dbProvider.getDriver(), socialClient);
+      },
+      inject: [NestPostgresProvider, SocialInteractionClient],
+    },
     {
       provide: BadgeEvaluator,
       useFactory: async (
@@ -230,6 +246,28 @@ import { UserService } from '@volontariapp/domain-user';
         NestRedisProvider,
         BadgeEvaluator,
         EVENT_FINISHED_BADGE_POST_PROCESSOR_OPTIONS,
+      ],
+    },
+    {
+      provide: EventFinishedImpactScorePostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        impactScoreCrediter: ImpactScoreCrediter,
+        options: PostProcessorOptions,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new EventFinishedImpactScorePostProcessor(
+          impactScoreCrediter,
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        ImpactScoreCrediter,
+        EVENT_FINISHED_IMPACT_SCORE_POST_PROCESSOR_OPTIONS,
       ],
     },
     userDeletionSuccessOptionsProvider,
