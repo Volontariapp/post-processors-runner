@@ -85,6 +85,9 @@ export function createMockDataSource(): {
 
   const manager = {
     createQueryBuilder: jest.fn().mockReturnValue(queryBuilder),
+    increment: jest
+      .fn<(...args: unknown[]) => Promise<unknown>>()
+      .mockResolvedValue({ affected: 1, raw: [] }),
     getRepository: jest.fn().mockImplementation((entity: unknown) => {
       const name = (entity as { name?: string }).name;
       if (name === 'BadgeProgressModel') {
