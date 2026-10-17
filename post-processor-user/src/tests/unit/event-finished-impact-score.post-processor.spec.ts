@@ -63,6 +63,25 @@ describe('EventFinishedImpactScorePostProcessor', () => {
       expect(crediter.creditEventFinished).toHaveBeenCalledWith(
         'event-123',
         40,
+        expect.anything(),
+      );
+    });
+
+    it('passes the source event trace context to the crediter', async () => {
+      const item = createEventFinishedBatchItem({
+        correlationId: 'corr-finished-9',
+        traceId: 'trace-finished-9',
+      });
+
+      await postProcessor['processEvents']([item]);
+
+      expect(crediter.creditEventFinished).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Number),
+        expect.objectContaining({
+          correlationId: 'corr-finished-9',
+          traceId: 'trace-finished-9',
+        }),
       );
     });
 
@@ -83,8 +102,16 @@ describe('EventFinishedImpactScorePostProcessor', () => {
       await postProcessor['processEvents'](items);
 
       expect(crediter.creditEventFinished).toHaveBeenCalledTimes(2);
-      expect(crediter.creditEventFinished).toHaveBeenCalledWith('event-1', 10);
-      expect(crediter.creditEventFinished).toHaveBeenCalledWith('event-2', 25);
+      expect(crediter.creditEventFinished).toHaveBeenCalledWith(
+        'event-1',
+        10,
+        expect.anything(),
+      );
+      expect(crediter.creditEventFinished).toHaveBeenCalledWith(
+        'event-2',
+        25,
+        expect.anything(),
+      );
     });
 
     it('skips a message emitted before the payload carried the score', async () => {
