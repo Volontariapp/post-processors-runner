@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import type { EventTraceContext } from '@volontariapp/database';
 import type {
   ImpactScoreCrediter,
   ImpactScoreCreditSummary,
@@ -13,6 +14,7 @@ export function createMockImpactScoreCrediter(): jest.Mocked<
         (
           eventId: string,
           awardedImpactScore: number,
+          context: EventTraceContext,
         ) => Promise<ImpactScoreCreditSummary>
       >()
       .mockResolvedValue({ credited: 0, skipped: 0 }),

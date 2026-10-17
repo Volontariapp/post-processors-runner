@@ -60,6 +60,7 @@ export class EventFinishedImpactScorePostProcessor extends BatchPostProcessor<Ev
         await this.impactScoreCrediter.creditEventFinished(
           eventId,
           awardedImpactScore,
+          event,
         );
       } catch (err: unknown) {
         this.logger.error(
