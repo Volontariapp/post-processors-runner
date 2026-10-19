@@ -27,5 +27,9 @@
     "idempotencyTtlSeconds": 86400,
     "maxRetries": 3,
     "retryDelayMs": 1000
+  },
+  "ranking": {
+    "requestTtlSeconds": 120,
+    "debounceSeconds": 30
   }
 }
