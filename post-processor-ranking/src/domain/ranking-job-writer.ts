@@ -1,58 +1,23 @@
 import { Injectable } from '@nestjs/common';
 import { DataSource, type EntityManager } from 'typeorm';
 import { JobsOutboxEntity, JobsOutboxModel } from '@volontariapp/database';
-import {
-  RankingListKind,
-  RankingRequestService,
-} from '@volontariapp/domain-ranking';
+import { RankingRequestService } from '@volontariapp/domain-ranking';
 import {
   JobMessagingType,
   RankingQueue,
   type IFanoutRankingPayload,
-  type RankingComputeReason,
 } from '@volontariapp/messaging';
 import { JobsOutboxRepository } from '@volontariapp/outbox';
 import { Logger } from '@volontariapp/logger';
 import { CustomConfig } from '../config/custom-config.js';
-
-const JOB_EMITTER = 'ms-ranking';
-
-const COMPUTE_JOB_TYPE = {
-  [RankingListKind.EVENT]: JobMessagingType.COMPUTE_USER_RANKING,
-  [RankingListKind.POST]: JobMessagingType.COMPUTE_USER_FEED,
-} as const;
-
-const BACKGROUND_QUEUE = {
-  [RankingListKind.EVENT]: RankingQueue.RANKING,
-  [RankingListKind.POST]: RankingQueue.FEED,
-} as const;
-
-export interface ComputeRequest {
-  userId: string;
-  listKind: RankingListKind;
-  reason: RankingComputeReason;
-}
-
-export interface FanoutRequest {
-  trigger: IFanoutRankingPayload['trigger'];
-  /** Identifiant de l'objet declencheur (eventId ou postId), emitterId du job. */
-  subjectId: string;
-  eventId?: string;
-  postId?: string;
-  authorId?: string;
-}
-
-type PersistedJob = Pick<
-  JobsOutboxEntity,
-  | 'id'
-  | 'status'
-  | 'attempts'
-  | 'type'
-  | 'emitter'
-  | 'emitterId'
-  | 'target'
-  | 'scheduledAt'
->;
+import {
+  BACKGROUND_QUEUE,
+  COMPUTE_JOB_TYPE,
+  JOB_EMITTER,
+} from './constants/ranking-job.constants.js';
+import type { ComputeRequest } from './interfaces/compute-request.interface.js';
+import type { FanoutRequest } from './interfaces/fanout-request.interface.js';
+import type { PersistedJob } from './types/persisted-job.type.js';
 
 /**
  * Ecrit les demandes de calcul et les jobs de fan-out dans jobs_outbox. Aucun appel Redis direct :

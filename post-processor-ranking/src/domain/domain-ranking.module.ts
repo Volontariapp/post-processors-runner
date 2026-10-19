@@ -13,22 +13,8 @@ import {
   PostgresRankingRunRepository,
   PostgresRankingScoreRepository,
   RANKING_MODELS,
-  RankingLikeLogService,
-  RankingMentionService,
-  RankingPurgeService,
-  RankingRequestService,
-  RankingWishService,
 } from '@volontariapp/domain-ranking';
-import { RankingJobWriter } from './ranking-job-writer.js';
-
-const services = [
-  RankingLikeLogService,
-  RankingMentionService,
-  RankingPurgeService,
-  RankingRequestService,
-  RankingWishService,
-  RankingJobWriter,
-];
+import { rankingDomainServices } from './constants/ranking-domain-services.constants.js';
 
 @Module({
   imports: [
@@ -49,8 +35,8 @@ const services = [
     PostgresRankingRequestRepository,
     PostgresRankingRunRepository,
     PostgresRankingScoreRepository,
-    ...services,
+    ...rankingDomainServices,
   ],
-  exports: [TypeOrmModule, ...services],
+  exports: [TypeOrmModule, ...rankingDomainServices],
 })
 export class DomainRankingModule {}

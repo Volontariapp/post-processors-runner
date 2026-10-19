@@ -1,6 +1,6 @@
 import type { Streams } from '@volontariapp/shared';
 import { getEventStreamName } from '@volontariapp/messaging';
-import { CustomConfig } from '../../config/custom-config.js';
+import { CustomConfig } from '../../../config/custom-config.js';
 
 /** Un groupe de consommateurs propre a ranking par flux, jamais partage avec un autre service. */
 export const rankingOptionsProvider = (

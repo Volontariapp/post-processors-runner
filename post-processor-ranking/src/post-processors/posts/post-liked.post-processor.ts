@@ -10,7 +10,7 @@ import {
 } from '@volontariapp/messaging';
 import { RankingLikeLogService } from '@volontariapp/domain-ranking';
 import type { Redis } from 'ioredis';
-import { resolveUserId } from '../resolve-user-id.js';
+import { resolveUserId } from '../helpers/resolve-user-id.helpers.js';
 
 /** POST_LIKED n'ecrit que le journal de likes : aucun recalcul, le feed ne doit pas bouger sous les yeux. */
 @Injectable()

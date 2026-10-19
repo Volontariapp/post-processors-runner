@@ -10,10 +10,8 @@ import {
 } from '@volontariapp/messaging';
 import { RankingListKind } from '@volontariapp/domain-ranking';
 import type { Redis } from 'ioredis';
-import {
-  RankingJobWriter,
-  type ComputeRequest,
-} from '../../domain/ranking-job-writer.js';
+import type { ComputeRequest } from '../../domain/interfaces/compute-request.interface.js';
+import { RankingJobWriter } from '../../domain/ranking-job-writer.js';
 
 /** Un compte neuf demande le calcul de ses deux listes, dans une seule transaction. */
 @Injectable()

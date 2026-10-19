@@ -3,10 +3,7 @@ import type { RedisProvider } from '@volontariapp/bridge';
 import { NestRedisProvider } from '@volontariapp/bridge-nest';
 import type { PostProcessorOptions } from '@volontariapp/post-processors';
 import type { Redis } from 'ioredis';
-
-interface StartablePostProcessor {
-  start(): Promise<void>;
-}
+import type { StartablePostProcessor } from '../interfaces/startable-post-processor.interface.js';
 
 /** Fournit un post-processor dont les dependances metier suivent le client Redis et les options. */
 export const postProcessorProvider = <
