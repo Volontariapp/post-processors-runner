@@ -9,7 +9,7 @@ import {
 } from '@volontariapp/domain-ranking';
 import { DomainRankingModule } from '../domain/domain-ranking.module.js';
 import { RankingJobWriter } from '../domain/ranking-job-writer.js';
-import { postProcessorProvider } from './post-processor-provider.js';
+import { postProcessorProvider } from './helpers/post-processor-provider.helpers.js';
 import { EventCreatedPostProcessor } from './events/event-created.post-processor.js';
 import { EventFinishedPostProcessor } from './events/event-finished.post-processor.js';
 import { EventUnwishedPostProcessor } from './events/event-unwished.post-processor.js';

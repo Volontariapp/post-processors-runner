@@ -11,7 +11,7 @@ import {
   USER_CREATED_OPTIONS,
   USER_DELETED_OPTIONS,
 } from './constants.js';
-import { rankingOptionsProvider } from './ranking-options.factory.js';
+import { rankingOptionsProvider } from './helpers/ranking-options-provider.helpers.js';
 
 export const rankingOptionsProviders = [
   rankingOptionsProvider(

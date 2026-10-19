@@ -14,7 +14,7 @@ import {
 } from '@volontariapp/domain-ranking';
 import type { Redis } from 'ioredis';
 import { RankingJobWriter } from '../../domain/ranking-job-writer.js';
-import { resolveUserId } from '../resolve-user-id.js';
+import { resolveUserId } from '../helpers/resolve-user-id.helpers.js';
 
 /** Un souhait ajoute met a jour ranking_event_wish puis demande un recalcul des evenements. */
 @Injectable()
