@@ -15,9 +15,8 @@ export default tseslint.config(
           allowDefaultProject: [
             '*.ts',
             '*.js',
-            'jest.config.js',
+            'eslint.config.mjs',
             'src/tests/unit/*.spec.ts',
-            'src/tests/integration/*.spec.ts',
           ],
           defaultProject: 'tsconfig.eslint.json',
         },
@@ -35,6 +34,6 @@ export default tseslint.config(
   },
   prettierConfig,
   {
-    ignores: ['dist/**', 'node_modules/**', 'eslint.config.mjs'],
+    ignores: ['dist/**', 'node_modules/**'],
   },
 );

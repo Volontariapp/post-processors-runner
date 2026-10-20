@@ -2,3 +2,7 @@ export * from './constants.js';
 export * from './job-outbox-success-options.js';
 export * from './job-outbox-failure-options.js';
 export * from './user-deleted.options.js';
+export * from './post-created.options.js';
+export * from './event-created.options.js';
+export * from './event-cover-replaced.options.js';
+export * from './user-avatar-replaced.options.js';
