@@ -18,11 +18,20 @@ import {
   postProcessorsJobOutboxFailureOptionsProvider,
   postProcessorsJobOutboxSuccessOptionsProvider,
   userDeletedOptionsProvider,
+  postProcessorsStorageFileScannedOptionsProvider,
+  postProcessorsStorageFileRejectedOptionsProvider,
+  postProcessorsStorageAttachmentRejectedOptionsProvider,
   POST_PROCESSORS_JOB_OUTBOX_SUCCESS_OPTIONS,
   POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
   POST_PROCESSOR_USER_DELETED_OPTIONS,
+  POST_PROCESSORS_STORAGE_FILE_SCANNED_OPTIONS,
+  POST_PROCESSORS_STORAGE_FILE_REJECTED_OPTIONS,
+  POST_PROCESSORS_STORAGE_ATTACHMENT_REJECTED_OPTIONS,
 } from './options/index.js';
 import { UserDeletedPostProcessor } from './user-deleted.post-processor.js';
+import { StorageFileScannedPostProcessor } from './storage-file-scanned.post-processor.js';
+import { StorageFileRejectedPostProcessor } from './storage-file-rejected.post-processor.js';
+import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rejected.post-processor.js';
 
 @Module({
   imports: [DomainPostModule, TypeOrmModule.forFeature([EventQueueModel])],
@@ -30,6 +39,9 @@ import { UserDeletedPostProcessor } from './user-deleted.post-processor.js';
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
     userDeletedOptionsProvider,
+    postProcessorsStorageFileScannedOptionsProvider,
+    postProcessorsStorageFileRejectedOptionsProvider,
+    postProcessorsStorageAttachmentRejectedOptionsProvider,
     {
       provide: JobOutboxSuccessPostProcessor,
       useFactory: async (
@@ -102,6 +114,75 @@ import { UserDeletedPostProcessor } from './user-deleted.post-processor.js';
         PostService,
         CommentService,
         getRepositoryToken(EventQueueModel),
+      ],
+    },
+    {
+      provide: StorageFileScannedPostProcessor,
+      useFactory: async (
+        dbProvider: PostgresProvider,
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+      ) => {
+        await dbProvider.connect();
+        await redisProvider.connect();
+        const postProcessor = new StorageFileScannedPostProcessor(
+          dbProvider.getDriver(),
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestPostgresProvider,
+        NestRedisProvider,
+        POST_PROCESSORS_STORAGE_FILE_SCANNED_OPTIONS,
+      ],
+    },
+    {
+      provide: StorageFileRejectedPostProcessor,
+      useFactory: async (
+        dbProvider: PostgresProvider,
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+      ) => {
+        await dbProvider.connect();
+        await redisProvider.connect();
+        const postProcessor = new StorageFileRejectedPostProcessor(
+          dbProvider.getDriver(),
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestPostgresProvider,
+        NestRedisProvider,
+        POST_PROCESSORS_STORAGE_FILE_REJECTED_OPTIONS,
+      ],
+    },
+    {
+      provide: StorageAttachmentRejectedPostProcessor,
+      useFactory: async (
+        dbProvider: PostgresProvider,
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+      ) => {
+        await dbProvider.connect();
+        await redisProvider.connect();
+        const postProcessor = new StorageAttachmentRejectedPostProcessor(
+          dbProvider.getDriver(),
+          redisProvider.getDriver(),
+          options,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestPostgresProvider,
+        NestRedisProvider,
+        POST_PROCESSORS_STORAGE_ATTACHMENT_REJECTED_OPTIONS,
       ],
     },
   ],

@@ -2,3 +2,6 @@ export * from './constants.js';
 export * from './job-outbox-success-options.js';
 export * from './job-outbox-failure-options.js';
 export * from './user-deleted.options.js';
+export * from './storage-file-scanned.options.js';
+export * from './storage-file-rejected.options.js';
+export * from './storage-attachment-rejected.options.js';
