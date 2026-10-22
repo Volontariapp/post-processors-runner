@@ -45,10 +45,13 @@ export abstract class BaseStorageCoverPostProcessor<
 
   protected async processEvents(events: BatchEventItem<T>[]): Promise<void> {
     for (const { event, messageId } of events) {
-      const payload: IStorageFileEntityPayload | undefined =
-        event.payload?.after;
+      const rawPayload = event.payload as
+        | { after?: IStorageFileEntityPayload }
+        | null
+        | undefined;
+      const payload = rawPayload?.after;
 
-      if (!payload || !payload.fileId || !payload.entityId) {
+      if (!payload?.fileId || !payload.entityId) {
         this.logger.error(
           `Invalid payload for ${String(this.expectedEventType)}: missing required fields`,
           {
