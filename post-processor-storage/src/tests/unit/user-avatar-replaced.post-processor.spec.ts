@@ -56,7 +56,7 @@ describe('UserAvatarReplacedPostProcessor', () => {
   });
 
   describe('processEvents', () => {
-    it('should attach replaced avatar file for valid USER_AVATAR_REPLACED event', async () => {
+    it('should attach replaced avatar file and release old file for valid USER_AVATAR_REPLACED event', async () => {
       const userId = '11111111-1111-1111-1111-111111111111';
       const newFileId = '22222222-2222-2222-2222-222222222222';
       const oldFileId = '33333333-3333-3333-3333-333333333333';
@@ -70,6 +70,15 @@ describe('UserAvatarReplacedPostProcessor', () => {
 
       await postProcessor['processEvents']([batchItem]);
 
+      expect(mockFileRepo.releaseFile).toHaveBeenCalledTimes(1);
+      expect(mockFileRepo.releaseFile).toHaveBeenCalledWith({
+        fileId: oldFileId,
+        entityType: EntityType.USER_AVATAR,
+        entityId: userId,
+        ownerId: userId,
+        newFileId,
+      });
+
       expect(mockFileRepo.attachFromConfirmationEvent).toHaveBeenCalledTimes(1);
       expect(mockFileRepo.attachFromConfirmationEvent).toHaveBeenCalledWith({
         fileIds: [newFileId],
@@ -77,6 +86,47 @@ describe('UserAvatarReplacedPostProcessor', () => {
         entityId: userId,
         ownerId: userId,
       });
+    });
+
+    it('should attach new avatar without releasing if oldFileId is not provided', async () => {
+      const userId = '11111111-1111-1111-1111-111111111111';
+      const newFileId = '22222222-2222-2222-2222-222222222222';
+
+      const batchItem =
+        FileAttachmentEventsFactory.buildUserAvatarReplacedBatchItem({
+          userId,
+          newFileId,
+          oldFileId: undefined,
+        });
+
+      await postProcessor['processEvents']([batchItem]);
+
+      expect(mockFileRepo.releaseFile).not.toHaveBeenCalled();
+      expect(mockFileRepo.attachFromConfirmationEvent).toHaveBeenCalledTimes(1);
+    });
+
+    it('should release old avatar even if newFileId is missing', async () => {
+      const userId = '11111111-1111-1111-1111-111111111111';
+      const oldFileId = '33333333-3333-3333-3333-333333333333';
+
+      const batchItem =
+        FileAttachmentEventsFactory.buildUserAvatarReplacedBatchItem({
+          userId,
+          newFileId: undefined,
+          oldFileId,
+        });
+
+      await postProcessor['processEvents']([batchItem]);
+
+      expect(mockFileRepo.releaseFile).toHaveBeenCalledTimes(1);
+      expect(mockFileRepo.releaseFile).toHaveBeenCalledWith({
+        fileId: oldFileId,
+        entityType: EntityType.USER_AVATAR,
+        entityId: userId,
+        ownerId: userId,
+        newFileId: undefined,
+      });
+      expect(mockFileRepo.attachFromConfirmationEvent).not.toHaveBeenCalled();
     });
 
     it('should skip processing if userId is missing', async () => {
@@ -88,19 +138,20 @@ describe('UserAvatarReplacedPostProcessor', () => {
 
       await postProcessor['processEvents']([batchItem]);
 
+      expect(mockFileRepo.releaseFile).not.toHaveBeenCalled();
       expect(mockFileRepo.attachFromConfirmationEvent).not.toHaveBeenCalled();
     });
 
-    it('should skip processing if newFileId is missing', async () => {
+    it('should rethrow error if releaseFile fails', async () => {
+      const testError = new Error('Database error on release old avatar');
+      mockFileRepo.releaseFile.mockRejectedValueOnce(testError);
+
       const batchItem =
-        FileAttachmentEventsFactory.buildUserAvatarReplacedBatchItem({
-          userId: '11111111-1111-1111-1111-111111111111',
-          newFileId: undefined,
-        });
+        FileAttachmentEventsFactory.buildUserAvatarReplacedBatchItem();
 
-      await postProcessor['processEvents']([batchItem]);
-
-      expect(mockFileRepo.attachFromConfirmationEvent).not.toHaveBeenCalled();
+      await expect(postProcessor['processEvents']([batchItem])).rejects.toThrow(
+        'Database error on release old avatar',
+      );
     });
 
     it('should rethrow error if attachFromConfirmationEvent fails', async () => {

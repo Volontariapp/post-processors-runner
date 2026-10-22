@@ -22,6 +22,8 @@ import {
   eventCreatedOptionsProvider,
   eventCoverReplacedOptionsProvider,
   userAvatarReplacedOptionsProvider,
+  postDeletedOptionsProvider,
+  eventDeletedOptionsProvider,
   JOB_OUTBOX_SUCCESS_POST_PROCESSOR_OPTIONS,
   JOB_OUTBOX_FAILED_POST_PROCESSOR_OPTIONS,
   POST_PROCESSOR_USER_DELETED_OPTIONS,
@@ -29,12 +31,16 @@ import {
   POST_PROCESSOR_EVENT_CREATED_OPTIONS,
   POST_PROCESSOR_EVENT_COVER_REPLACED_OPTIONS,
   POST_PROCESSOR_USER_AVATAR_REPLACED_OPTIONS,
+  POST_PROCESSOR_POST_DELETED_OPTIONS,
+  POST_PROCESSOR_EVENT_DELETED_OPTIONS,
 } from './options/index.js';
 import { UserDeletedPostProcessor } from './user-deleted.post-processor.js';
 import { PostCreatedPostProcessor } from './post-created.post-processor.js';
 import { EventCreatedPostProcessor } from './event-created.post-processor.js';
 import { EventCoverReplacedPostProcessor } from './event-cover-replaced.post-processor.js';
 import { UserAvatarReplacedPostProcessor } from './user-avatar-replaced.post-processor.js';
+import { PostDeletedPostProcessor } from './post-deleted.post-processor.js';
+import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
 
 @Module({
   imports: [DomainStorageModule, TypeOrmModule.forFeature([EventQueueModel])],
@@ -46,6 +52,8 @@ import { UserAvatarReplacedPostProcessor } from './user-avatar-replaced.post-pro
     eventCreatedOptionsProvider,
     eventCoverReplacedOptionsProvider,
     userAvatarReplacedOptionsProvider,
+    postDeletedOptionsProvider,
+    eventDeletedOptionsProvider,
     {
       provide: JobOutboxSuccessPostProcessor,
       useFactory: async (
@@ -202,6 +210,50 @@ import { UserAvatarReplacedPostProcessor } from './user-avatar-replaced.post-pro
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_USER_AVATAR_REPLACED_OPTIONS,
+        PostgresFileRepository,
+      ],
+    },
+    {
+      provide: PostDeletedPostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+        fileRepository: PostgresFileRepository,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new PostDeletedPostProcessor(
+          redisProvider.getDriver(),
+          options,
+          fileRepository,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        POST_PROCESSOR_POST_DELETED_OPTIONS,
+        PostgresFileRepository,
+      ],
+    },
+    {
+      provide: EventDeletedPostProcessor,
+      useFactory: async (
+        redisProvider: RedisProvider,
+        options: PostProcessorOptions,
+        fileRepository: PostgresFileRepository,
+      ) => {
+        await redisProvider.connect();
+        const postProcessor = new EventDeletedPostProcessor(
+          redisProvider.getDriver(),
+          options,
+          fileRepository,
+        );
+        void postProcessor.start();
+        return postProcessor;
+      },
+      inject: [
+        NestRedisProvider,
+        POST_PROCESSOR_EVENT_DELETED_OPTIONS,
         PostgresFileRepository,
       ],
     },

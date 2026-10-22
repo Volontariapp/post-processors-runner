@@ -34,9 +34,11 @@ export class EventCoverReplacedPostProcessor extends BatchPostProcessor<EventEve
     events: BatchEventItem<EventEventMessagingType.EVENT_COVER_REPLACED>[],
   ): Promise<void> {
     for (const { event, messageId } of events) {
-      const payload: IEventCoverReplacedPayload = event.payload.after;
+      const rawPayload = event.payload as
+        { after?: IEventCoverReplacedPayload } | null | undefined;
+      const payload = rawPayload?.after;
 
-      if (!payload.eventId || !payload.userId) {
+      if (!payload?.eventId || !payload.userId) {
         this.logger.error(
           'Invalid payload for EVENT_COVER_REPLACED: missing eventId or userId',
           {
@@ -45,6 +47,38 @@ export class EventCoverReplacedPostProcessor extends BatchPostProcessor<EventEve
           },
         );
         continue;
+      }
+
+      if (payload.oldFileId) {
+        try {
+          await this.fileRepository.releaseFile({
+            fileId: payload.oldFileId,
+            entityType: EntityType.EVENT_COVER,
+            entityId: payload.eventId,
+            ownerId: payload.userId,
+            newFileId: payload.newFileId,
+          });
+
+          this.logger.info(
+            `Successfully released old cover file ${payload.oldFileId} for event ${payload.eventId}`,
+            {
+              messageId,
+              eventId: payload.eventId,
+              oldFileId: payload.oldFileId,
+            },
+          );
+        } catch (error) {
+          this.logger.error(
+            `Error releasing old cover file for event ${payload.eventId}`,
+            error,
+            {
+              messageId,
+              eventId: payload.eventId,
+              userId: payload.userId,
+            },
+          );
+          throw error;
+        }
       }
 
       if (!payload.newFileId) {

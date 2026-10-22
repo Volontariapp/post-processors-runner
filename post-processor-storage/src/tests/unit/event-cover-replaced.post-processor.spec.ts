@@ -56,7 +56,7 @@ describe('EventCoverReplacedPostProcessor', () => {
   });
 
   describe('processEvents', () => {
-    it('should attach replaced cover file for valid EVENT_COVER_REPLACED event', async () => {
+    it('should attach replaced cover file and release old file for valid EVENT_COVER_REPLACED event', async () => {
       const eventId = '11111111-1111-1111-1111-111111111111';
       const userId = '22222222-2222-2222-2222-222222222222';
       const newFileId = '33333333-3333-3333-3333-333333333333';
@@ -72,6 +72,15 @@ describe('EventCoverReplacedPostProcessor', () => {
 
       await postProcessor['processEvents']([batchItem]);
 
+      expect(mockFileRepo.releaseFile).toHaveBeenCalledTimes(1);
+      expect(mockFileRepo.releaseFile).toHaveBeenCalledWith({
+        fileId: oldFileId,
+        entityType: EntityType.EVENT_COVER,
+        entityId: eventId,
+        ownerId: userId,
+        newFileId,
+      });
+
       expect(mockFileRepo.attachFromConfirmationEvent).toHaveBeenCalledTimes(1);
       expect(mockFileRepo.attachFromConfirmationEvent).toHaveBeenCalledWith({
         fileIds: [newFileId],
@@ -79,6 +88,51 @@ describe('EventCoverReplacedPostProcessor', () => {
         entityId: eventId,
         ownerId: userId,
       });
+    });
+
+    it('should attach new cover without releasing if oldFileId is not provided', async () => {
+      const eventId = '11111111-1111-1111-1111-111111111111';
+      const userId = '22222222-2222-2222-2222-222222222222';
+      const newFileId = '33333333-3333-3333-3333-333333333333';
+
+      const batchItem =
+        FileAttachmentEventsFactory.buildEventCoverReplacedBatchItem({
+          eventId,
+          userId,
+          newFileId,
+          oldFileId: undefined,
+        });
+
+      await postProcessor['processEvents']([batchItem]);
+
+      expect(mockFileRepo.releaseFile).not.toHaveBeenCalled();
+      expect(mockFileRepo.attachFromConfirmationEvent).toHaveBeenCalledTimes(1);
+    });
+
+    it('should release old cover even if newFileId is missing', async () => {
+      const eventId = '11111111-1111-1111-1111-111111111111';
+      const userId = '22222222-2222-2222-2222-222222222222';
+      const oldFileId = '44444444-4444-4444-4444-444444444444';
+
+      const batchItem =
+        FileAttachmentEventsFactory.buildEventCoverReplacedBatchItem({
+          eventId,
+          userId,
+          newFileId: undefined,
+          oldFileId,
+        });
+
+      await postProcessor['processEvents']([batchItem]);
+
+      expect(mockFileRepo.releaseFile).toHaveBeenCalledTimes(1);
+      expect(mockFileRepo.releaseFile).toHaveBeenCalledWith({
+        fileId: oldFileId,
+        entityType: EntityType.EVENT_COVER,
+        entityId: eventId,
+        ownerId: userId,
+        newFileId: undefined,
+      });
+      expect(mockFileRepo.attachFromConfirmationEvent).not.toHaveBeenCalled();
     });
 
     it('should skip processing if eventId is missing', async () => {
@@ -91,6 +145,7 @@ describe('EventCoverReplacedPostProcessor', () => {
 
       await postProcessor['processEvents']([batchItem]);
 
+      expect(mockFileRepo.releaseFile).not.toHaveBeenCalled();
       expect(mockFileRepo.attachFromConfirmationEvent).not.toHaveBeenCalled();
     });
 
@@ -104,20 +159,20 @@ describe('EventCoverReplacedPostProcessor', () => {
 
       await postProcessor['processEvents']([batchItem]);
 
+      expect(mockFileRepo.releaseFile).not.toHaveBeenCalled();
       expect(mockFileRepo.attachFromConfirmationEvent).not.toHaveBeenCalled();
     });
 
-    it('should skip processing if newFileId is missing', async () => {
+    it('should rethrow error if releaseFile fails', async () => {
+      const testError = new Error('Database error on release old cover');
+      mockFileRepo.releaseFile.mockRejectedValueOnce(testError);
+
       const batchItem =
-        FileAttachmentEventsFactory.buildEventCoverReplacedBatchItem({
-          eventId: '11111111-1111-1111-1111-111111111111',
-          userId: '22222222-2222-2222-2222-222222222222',
-          newFileId: undefined,
-        });
+        FileAttachmentEventsFactory.buildEventCoverReplacedBatchItem();
 
-      await postProcessor['processEvents']([batchItem]);
-
-      expect(mockFileRepo.attachFromConfirmationEvent).not.toHaveBeenCalled();
+      await expect(postProcessor['processEvents']([batchItem])).rejects.toThrow(
+        'Database error on release old cover',
+      );
     });
 
     it('should rethrow error if attachFromConfirmationEvent fails', async () => {

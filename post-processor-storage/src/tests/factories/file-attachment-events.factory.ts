@@ -7,6 +7,8 @@ import {
   type IEventCreatedPayload,
   type IEventCoverReplacedPayload,
   type IUserAvatarReplacedPayload,
+  type IPostDeletedPayload,
+  type IEventDeletedPayload,
   type StreamEvent,
 } from '@volontariapp/messaging';
 import type { BatchEventItem } from '@volontariapp/post-processors';
@@ -137,6 +139,74 @@ export class FileAttachmentEventsFactory {
       type: UserEventMessagingType.USER_AVATAR_REPLACED,
       emitter: 'ms-user',
       emitterId: payload.userId,
+      traceId: randomUUID(),
+      correlationId: randomUUID(),
+      traceparent: SOURCE_TRACEPARENT,
+      createdAt: new Date().toISOString(),
+      payload: {
+        before: undefined,
+        after: payload,
+      },
+    };
+
+    return {
+      messageId:
+        messageIdOverride ??
+        `1700000000000-${String(Math.floor(Math.random() * 1000))}`,
+      event,
+    };
+  }
+
+  static buildPostDeletedBatchItem(
+    overrides?: Partial<IPostDeletedPayload>,
+    messageIdOverride?: string,
+  ): BatchEventItem<PostEventMessagingType.POST_DELETED> {
+    const payload: IPostDeletedPayload = {
+      postId: randomUUID(),
+      userId: randomUUID(),
+      ...overrides,
+    };
+
+    const event: StreamEvent<IPostDeletedPayload> = {
+      id: randomUUID(),
+      version: 1,
+      type: PostEventMessagingType.POST_DELETED,
+      emitter: 'ms-post',
+      emitterId: payload.postId,
+      traceId: randomUUID(),
+      correlationId: randomUUID(),
+      traceparent: SOURCE_TRACEPARENT,
+      createdAt: new Date().toISOString(),
+      payload: {
+        before: undefined,
+        after: payload,
+      },
+    };
+
+    return {
+      messageId:
+        messageIdOverride ??
+        `1700000000000-${String(Math.floor(Math.random() * 1000))}`,
+      event,
+    };
+  }
+
+  static buildEventDeletedBatchItem(
+    overrides?: Partial<IEventDeletedPayload>,
+    messageIdOverride?: string,
+  ): BatchEventItem<EventEventMessagingType.EVENT_DELETED> {
+    const payload: IEventDeletedPayload = {
+      eventId: randomUUID(),
+      userId: randomUUID(),
+      ...overrides,
+    };
+
+    const event: StreamEvent<IEventDeletedPayload> = {
+      id: randomUUID(),
+      version: 1,
+      type: EventEventMessagingType.EVENT_DELETED,
+      emitter: 'ms-event',
+      emitterId: payload.eventId,
       traceId: randomUUID(),
       correlationId: randomUUID(),
       traceparent: SOURCE_TRACEPARENT,
