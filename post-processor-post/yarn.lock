@@ -4164,9 +4164,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/post-processors@npm:3.4.0-snap-78178f5":
-  version: 3.4.0-snap-78178f5
-  resolution: "@volontariapp/post-processors@npm:3.4.0-snap-78178f5"
+"@volontariapp/post-processors@npm:3.4.0":
+  version: 3.4.0
+  resolution: "@volontariapp/post-processors@npm:3.4.0"
   dependencies:
     "@volontariapp/database": "npm:3.10.13"
     "@volontariapp/health-check": "npm:1.0.10"
@@ -4177,7 +4177,7 @@ __metadata:
   peerDependencies:
     "@nestjs/common": ^11.0.0
     ioredis: ^5.0.0
-  checksum: 10c0/8b2af0ab1bf35f5fe9676281466a793acd314e89e3332adde04acf8171ce6b27070aefb07e8bf2201d844bb2b2ff14e68250bd2f8d0519e385a6aa0fb0529e2f
+  checksum: 10c0/4bbd68e0f85170c3b4e1f8d76262fedc87d6f24b4b42a4739e9b83b766842b22b6857ee4be7d43336f39b2efeef158d98f051c456757d77024f741c9645c713d
   languageName: node
   linkType: hard
 
@@ -8663,7 +8663,7 @@ __metadata:
     "@volontariapp/messaging": "npm:2.27.0"
     "@volontariapp/monitoring": "npm:2.2.2"
     "@volontariapp/outbox": "npm:0.10.14"
-    "@volontariapp/post-processors": "npm:3.4.0-snap-78178f5"
+    "@volontariapp/post-processors": "npm:3.4.0"
     "@volontariapp/shared": "npm:0.16.0"
     "@volontariapp/testing": "npm:1.0.3"
     axios: "npm:^1.7.9"
