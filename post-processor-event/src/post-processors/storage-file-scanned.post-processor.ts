@@ -25,4 +25,3 @@ export class StorageFileScannedPostProcessor extends BaseStorageCoverPostProcess
     );
   }
 }
-

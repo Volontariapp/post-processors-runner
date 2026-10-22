@@ -16,4 +16,3 @@ export const postProcessorsStorageFileScannedOptionsProvider = {
   }),
   inject: [CustomConfig],
 };
-

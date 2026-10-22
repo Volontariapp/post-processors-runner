@@ -16,4 +16,3 @@ export const postProcessorsStorageFileRejectedOptionsProvider = {
   }),
   inject: [CustomConfig],
 };
-

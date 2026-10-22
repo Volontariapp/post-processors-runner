@@ -103,27 +103,6 @@ describe('Storage Cover Post-Processors (event)', () => {
           CoverStatus.COVER_STATUS_READY,
         );
       });
-
-      it('should support direct payload not wrapped in { after }', async () => {
-        const item = StorageCoverEventsFactory.buildFileScannedItem();
-        const innerPayload = item.event.payload.after;
-        (item.event as unknown as { payload: unknown }).payload = innerPayload;
-
-        mockEventRepo.applyCoverResult.mockResolvedValue({
-          id: 'event-456',
-          coverFileId: 'file-123',
-          coverStatus: CoverStatus.COVER_STATUS_READY,
-        } as never);
-
-        await processor['processEvents']([item]);
-
-        expect(mockEventRepo.applyCoverResult).toHaveBeenCalledTimes(1);
-        expect(mockEventRepo.applyCoverResult).toHaveBeenCalledWith(
-          'event-456',
-          'file-123',
-          CoverStatus.COVER_STATUS_READY,
-        );
-      });
     });
   });
 

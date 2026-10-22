@@ -25,4 +25,3 @@ export class StorageAttachmentRejectedPostProcessor extends BaseStorageCoverPost
     );
   }
 }
-

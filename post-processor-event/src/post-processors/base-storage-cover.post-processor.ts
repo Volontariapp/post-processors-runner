@@ -45,9 +45,10 @@ export abstract class BaseStorageCoverPostProcessor<
 
   protected async processEvents(events: BatchEventItem<T>[]): Promise<void> {
     for (const { event, messageId } of events) {
-      const payload = this.extractStoragePayload(event.payload);
+      const payload: IStorageFileEntityPayload | undefined =
+        event.payload?.after;
 
-      if (!payload) {
+      if (!payload || !payload.fileId || !payload.entityId) {
         this.logger.error(
           `Invalid payload for ${String(this.expectedEventType)}: missing required fields`,
           {
@@ -124,34 +125,5 @@ export abstract class BaseStorageCoverPostProcessor<
         throw error;
       }
     }
-  }
-
-  private extractStoragePayload(
-    rawPayload: unknown,
-  ): IStorageFileEntityPayload | null {
-    if (!rawPayload || typeof rawPayload !== 'object') {
-      return null;
-    }
-    const data =
-      'after' in rawPayload &&
-      rawPayload.after &&
-      typeof rawPayload.after === 'object'
-        ? (rawPayload as { after: Record<string, unknown> }).after
-        : (rawPayload as Record<string, unknown>);
-
-    if (
-      typeof data.fileId === 'string' &&
-      data.fileId.trim() !== '' &&
-      typeof data.entityType === 'string' &&
-      typeof data.entityId === 'string' &&
-      data.entityId.trim() !== ''
-    ) {
-      return {
-        fileId: data.fileId,
-        entityType: data.entityType as StorageEntityType,
-        entityId: data.entityId,
-      };
-    }
-    return null;
   }
 }

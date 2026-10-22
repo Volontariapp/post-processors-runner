@@ -16,4 +16,3 @@ export const postProcessorsStorageAttachmentRejectedOptionsProvider = {
   }),
   inject: [CustomConfig],
 };
-
