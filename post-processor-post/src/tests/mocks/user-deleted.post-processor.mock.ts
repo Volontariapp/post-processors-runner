@@ -7,6 +7,7 @@ import {
 } from '@volontariapp/domain-post';
 import type { Redis } from 'ioredis';
 import type { PostProcessorOptions } from '@volontariapp/post-processors';
+import type { DataSource } from 'typeorm';
 
 export function createMockPostRepository(): IPostRepository {
   return {
@@ -16,6 +17,7 @@ export function createMockPostRepository(): IPostRepository {
     create: jest.fn<IPostRepository['create']>(),
     createWithPostCreated: jest.fn<IPostRepository['createWithPostCreated']>(),
     update: jest.fn<IPostRepository['update']>(),
+    updateMediaScanStatus: jest.fn<IPostRepository['updateMediaScanStatus']>(),
     delete: jest.fn<IPostRepository['delete']>(),
     deleteWithPostDeleted: jest.fn<IPostRepository['deleteWithPostDeleted']>(),
     deleteByAuthorId: jest.fn<IPostRepository['deleteByAuthorId']>(),
@@ -63,6 +65,15 @@ export function createMockEventQueueRepository(): IMockEventQueueRepository {
     create: jest.fn().mockImplementation((entity) => entity),
     save: jest.fn().mockImplementation((entities) => Promise.resolve(entities)),
   };
+}
+
+export function createMockDb(mockRepo?: unknown): jest.Mocked<DataSource> {
+  const db = {
+    getRepository: jest.fn((_entity: unknown) => {
+      return mockRepo as never;
+    }),
+  } as never as jest.Mocked<DataSource>;
+  return db;
 }
 
 export function createMockRedisClient(): jest.Mocked<Redis> {
