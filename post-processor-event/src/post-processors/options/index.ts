@@ -5,3 +5,6 @@ export * from './event-created-options.js';
 export * from './event-creation-failed-options.js';
 export * from './event-creation-successfull-options.js';
 export * from './user-deleted-options.js';
+export * from './storage-file-scanned.options.js';
+export * from './storage-file-rejected.options.js';
+export * from './storage-attachment-rejected.options.js';
