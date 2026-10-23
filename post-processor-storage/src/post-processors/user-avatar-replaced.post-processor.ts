@@ -32,9 +32,11 @@ export class UserAvatarReplacedPostProcessor extends BatchPostProcessor<UserEven
     events: BatchEventItem<UserEventMessagingType.USER_AVATAR_REPLACED>[],
   ): Promise<void> {
     for (const { event, messageId } of events) {
-      const payload: IUserAvatarReplacedPayload = event.payload.after;
+      const rawPayload = event.payload as
+        { after?: IUserAvatarReplacedPayload } | null | undefined;
+      const payload = rawPayload?.after;
 
-      if (!payload.userId) {
+      if (!payload?.userId) {
         this.logger.error(
           'Invalid payload for USER_AVATAR_REPLACED: missing userId',
           {
@@ -43,6 +45,37 @@ export class UserAvatarReplacedPostProcessor extends BatchPostProcessor<UserEven
           },
         );
         continue;
+      }
+
+      if (payload.oldFileId) {
+        try {
+          await this.fileRepository.releaseFile({
+            fileId: payload.oldFileId,
+            entityType: EntityType.USER_AVATAR,
+            entityId: payload.userId,
+            ownerId: payload.userId,
+            newFileId: payload.newFileId,
+          });
+
+          this.logger.info(
+            `Successfully released old avatar file ${payload.oldFileId} for user ${payload.userId}`,
+            {
+              messageId,
+              userId: payload.userId,
+              oldFileId: payload.oldFileId,
+            },
+          );
+        } catch (error) {
+          this.logger.error(
+            `Error releasing old avatar file for user ${payload.userId}`,
+            error,
+            {
+              messageId,
+              userId: payload.userId,
+            },
+          );
+          throw error;
+        }
       }
 
       if (!payload.newFileId) {

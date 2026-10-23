@@ -8,6 +8,8 @@ import {
 
 export interface IMockFileRepository {
   attachFromConfirmationEvent: jest.Mock;
+  releaseForEntity: jest.Mock;
+  releaseFile: jest.Mock;
 }
 
 export function createMockFileRepository(): IMockFileRepository {
@@ -23,6 +25,11 @@ export function createMockFileRepository(): IMockFileRepository {
     attachFromConfirmationEvent: jest
       .fn()
       .mockResolvedValue(defaultResults as never),
+    releaseForEntity: jest.fn().mockResolvedValue({
+      releasedFileIds: ['file-123'],
+      tombstoneCreated: true,
+    } as never),
+    releaseFile: jest.fn().mockResolvedValue(true as never),
   };
 }
 

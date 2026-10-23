@@ -6,3 +6,5 @@ export * from './post-created.options.js';
 export * from './event-created.options.js';
 export * from './event-cover-replaced.options.js';
 export * from './user-avatar-replaced.options.js';
+export * from './post-deleted.options.js';
+export * from './event-deleted.options.js';
