@@ -1,5 +1,5 @@
 # 1. BASE
-FROM node:24.14.0-alpine AS base
+FROM node:26.12.1-alpine AS base
 RUN apk add --no-cache libc6-compat
 WORKDIR /app
 RUN corepack enable && corepack prepare yarn@4.12.0 --activate
@@ -13,7 +13,7 @@ RUN yarn build
 RUN yarn workspaces focus --all --production && yarn cache clean --all
 
 # 3. PRODUCTION
-FROM node:24.14.0-alpine AS production
+FROM node:26.12.1-alpine AS production
 LABEL maintainer="Volontariapp"
 WORKDIR /app
 
