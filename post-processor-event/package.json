@@ -78,6 +78,9 @@
     "typescript-eslint": "^8.72.0"
   },
   "resolutions": {
-    "protobufjs@npm:8.0.0": "npm:8.0.1"
+    "protobufjs@npm:8.0.0": "npm:8.4.1",
+    "multer@npm:2.4.0": "npm:2.5.0",
+    "protobufjs@npm:8.0.1": "npm:8.4.1",
+    "@opentelemetry/propagator-jaeger@npm:2.7.1": "npm:2.9.0"
   }
 }
