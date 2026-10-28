@@ -24,6 +24,8 @@ export function createMockPostRepository(): IPostRepository {
     search: jest.fn<IPostRepository['search']>(),
     listPaginated: jest.fn<IPostRepository['listPaginated']>(),
     purgePostsByAuthor: jest.fn<IPostRepository['purgePostsByAuthor']>(),
+    listRecentByAuthors: jest.fn<IPostRepository['listRecentByAuthors']>(),
+    listByIds: jest.fn<IPostRepository['listByIds']>(),
   };
 }
 
@@ -41,6 +43,7 @@ export function createMockCommentRepository(): ICommentRepository {
       jest.fn<ICommentRepository['listPaginatedByPostId']>(),
     anonymizeCommentsByAuthor:
       jest.fn<ICommentRepository['anonymizeCommentsByAuthor']>(),
+    listByAuthor: jest.fn<ICommentRepository['listByAuthor']>(),
   };
 }
 
