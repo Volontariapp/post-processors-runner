@@ -136,4 +136,27 @@ describe('RankingJobWriter (Unit)', () => {
       eventId: 'event-1',
     });
   });
+
+  it('stores the trace context captured for the job in the persisted row', async () => {
+    const traceparent =
+      '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01';
+    jest.spyOn(JobsOutboxEntity, 'createJob').mockReturnValue(
+      JobsOutboxEntity.createJob({
+        type: 'ranking.fanout',
+        emitter: 'ms-ranking',
+        emitterId: USER,
+        target: 'ranking-queue',
+        payload: { trigger: 'EVENT_CREATED', requestedAt: REQUESTED_AT },
+        traceparent,
+      }),
+    );
+
+    await writer.enqueueFanout({
+      trigger: 'EVENT_CREATED',
+      subjectId: 'event-1',
+      eventId: 'event-1',
+    });
+
+    expect(createSpy.mock.calls[0]?.[0].traceparent).toBe(traceparent);
+  });
 });

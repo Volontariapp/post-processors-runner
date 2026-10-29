@@ -10,4 +10,5 @@ export type PersistedJob = Pick<
   | 'emitterId'
   | 'target'
   | 'scheduledAt'
+  | 'traceparent'
 >;
