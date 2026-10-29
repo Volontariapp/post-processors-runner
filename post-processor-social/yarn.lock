@@ -7591,17 +7591,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"neo4j-driver-bolt-connection@npm:6.1.0":
-  version: 6.1.0
-  resolution: "neo4j-driver-bolt-connection@npm:6.1.0"
-  dependencies:
-    buffer: "npm:^6.0.3"
-    neo4j-driver-core: "npm:6.1.0"
-    string_decoder: "npm:^1.3.0"
-  checksum: 10c0/fc8b550735dd048dec46e3cc519e8139be11a5f762915fdc33e6f0a4298f6f07513a54df5b9aa3e8d5ae11d616eccf3bacf8fce09a4960fd109123ea6697cb28
-  languageName: node
-  linkType: hard
-
 "neo4j-driver-bolt-connection@npm:6.3.0":
   version: 6.3.0
   resolution: "neo4j-driver-bolt-connection@npm:6.3.0"
@@ -7613,13 +7602,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"neo4j-driver-core@npm:6.1.0":
-  version: 6.1.0
-  resolution: "neo4j-driver-core@npm:6.1.0"
-  checksum: 10c0/e2de8f784881bcabffc5b2d4e5412ba0004312fd86f2e4080d65b5c9af66ff102414ef2d483ea3f7c69e4d79475145eabc74c234c6b8b5a7be6c59eaead48de4
-  languageName: node
-  linkType: hard
-
 "neo4j-driver-core@npm:6.3.0":
   version: 6.3.0
   resolution: "neo4j-driver-core@npm:6.3.0"
@@ -7627,18 +7609,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"neo4j-driver@npm:^6.0.1":
-  version: 6.1.0
-  resolution: "neo4j-driver@npm:6.1.0"
-  dependencies:
-    neo4j-driver-bolt-connection: "npm:6.1.0"
-    neo4j-driver-core: "npm:6.1.0"
-    rxjs: "npm:^7.8.2"
-  checksum: 10c0/1028df71e5088882fe714d1e3a30389ccaabcfb23c0fb0750de5850018fd54286f9f5d7415bfb3e953db8b7629ed9b0a07b2a48ad0c38d89f80a042d2346a163
-  languageName: node
-  linkType: hard
-
-"neo4j-driver@npm:^6.2.0":
+"neo4j-driver@npm:^6.0.1, neo4j-driver@npm:^6.2.0":
   version: 6.3.0
   resolution: "neo4j-driver@npm:6.3.0"
   dependencies:

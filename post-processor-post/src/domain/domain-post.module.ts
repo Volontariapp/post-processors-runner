@@ -11,7 +11,9 @@ import {
 } from '@volontariapp/domain-post';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([PostModel, CommentModel, PostMediaModel])],
+  imports: [
+    TypeOrmModule.forFeature([PostModel, CommentModel, PostMediaModel]),
+  ],
   providers: [
     PostgresPostRepository,
     PostgresCommentRepository,
