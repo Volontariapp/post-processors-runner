@@ -46,9 +46,7 @@ export abstract class BaseStorageCoverPostProcessor<
   protected async processEvents(events: BatchEventItem<T>[]): Promise<void> {
     for (const { event, messageId } of events) {
       const rawPayload = event.payload as
-        | { after?: IStorageFileEntityPayload }
-        | null
-        | undefined;
+        { after?: IStorageFileEntityPayload } | null | undefined;
       const payload = rawPayload?.after;
 
       if (!payload?.fileId || !payload.entityId) {

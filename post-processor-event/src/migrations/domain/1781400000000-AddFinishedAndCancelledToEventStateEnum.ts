@@ -11,8 +11,12 @@ export class AddFinishedAndCancelledToEventStateEnum1781400000000 implements Mig
   name = 'AddFinishedAndCancelledToEventStateEnum1781400000000';
 
   public async up(queryRunner: QueryRunner): Promise<void> {
-    await queryRunner.query(`ALTER TYPE "public"."events_state_enum" ADD VALUE IF NOT EXISTS '4'`);
-    await queryRunner.query(`ALTER TYPE "public"."events_state_enum" ADD VALUE IF NOT EXISTS '5'`);
+    await queryRunner.query(
+      `ALTER TYPE "public"."events_state_enum" ADD VALUE IF NOT EXISTS '4'`,
+    );
+    await queryRunner.query(
+      `ALTER TYPE "public"."events_state_enum" ADD VALUE IF NOT EXISTS '5'`,
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
@@ -22,11 +26,15 @@ export class AddFinishedAndCancelledToEventStateEnum1781400000000 implements Mig
     await queryRunner.query(
       `CREATE TYPE "public"."events_state_enum" AS ENUM('0', '1', '2', '3', '-1')`,
     );
-    await queryRunner.query(`ALTER TABLE "events" ALTER COLUMN "state" DROP DEFAULT`);
+    await queryRunner.query(
+      `ALTER TABLE "events" ALTER COLUMN "state" DROP DEFAULT`,
+    );
     await queryRunner.query(
       `ALTER TABLE "events" ALTER COLUMN "state" TYPE "public"."events_state_enum" USING "state"::"text"::"public"."events_state_enum"`,
     );
-    await queryRunner.query(`ALTER TABLE "events" ALTER COLUMN "state" SET DEFAULT '1'`);
+    await queryRunner.query(
+      `ALTER TABLE "events" ALTER COLUMN "state" SET DEFAULT '1'`,
+    );
     await queryRunner.query(`DROP TYPE "public"."events_state_enum_old"`);
   }
 }
