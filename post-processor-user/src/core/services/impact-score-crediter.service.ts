@@ -8,7 +8,7 @@ import {
 } from '@volontariapp/database';
 import { EventQueueRepository } from '@volontariapp/outbox';
 import { UserEventMessagingType } from '@volontariapp/messaging';
-import { Streams } from '@volontariapp/shared';
+import { Streams, computeEventScoring } from '@volontariapp/shared';
 import { Logger } from '@volontariapp/logger';
 import type { ISocialInteractionClient } from '../clients/social-interaction.client.js';
 
@@ -19,8 +19,19 @@ export interface ImpactScoreCreditSummary {
   skipped: number;
 }
 
+export interface CreditEventFinishedParams {
+  eventId: string;
+  awardedImpactScore?: number;
+  scoringVersion?: number;
+  startAt?: string;
+  endAt?: string;
+  maxParticipants?: number;
+  organizerId?: string;
+  context: EventTraceContext;
+}
+
 /**
- * Credite le score d'impact d'un evenement termine a chacun de ses participants.
+ * Credite le score d'impact d'un evenement termine a chacun de ses participants (et a l'organisateur selon la formule).
  *
  * Idempotent par couple (evenement, participant) : le registre `impact_score_credits`,
  * l'increment de `users.total_impact_score` et la ligne outbox `user.impact_score_credited`
@@ -40,6 +51,152 @@ export class ImpactScoreCrediter {
   ) {}
 
   async creditEventFinished(
+    params: CreditEventFinishedParams,
+  ): Promise<ImpactScoreCreditSummary>;
+  async creditEventFinished(
+    eventId: string,
+    awardedImpactScore: number,
+    context: EventTraceContext,
+  ): Promise<ImpactScoreCreditSummary>;
+  async creditEventFinished(
+    paramsOrEventId: CreditEventFinishedParams | string,
+    legacyScoreOrContext?: number | EventTraceContext,
+    legacyContext?: EventTraceContext,
+  ): Promise<ImpactScoreCreditSummary> {
+    if (typeof paramsOrEventId === 'string') {
+      const score =
+        typeof legacyScoreOrContext === 'number' ? legacyScoreOrContext : 0;
+      const context: EventTraceContext =
+        legacyContext ??
+        (typeof legacyScoreOrContext === 'object'
+          ? legacyScoreOrContext
+          : { correlationId: 'unknown', traceparent: '' });
+      return this.creditLegacyEventFinished(paramsOrEventId, score, context);
+    }
+
+    const {
+      eventId,
+      awardedImpactScore,
+      scoringVersion,
+      startAt,
+      endAt,
+      maxParticipants,
+      organizerId,
+      context,
+    } = paramsOrEventId;
+
+    if (scoringVersion !== undefined && scoringVersion >= 1) {
+      return this.creditDynamicEventFinished({
+        eventId,
+        startAt,
+        endAt,
+        maxParticipants,
+        organizerId,
+        context,
+      });
+    }
+
+    return this.creditLegacyEventFinished(
+      eventId,
+      awardedImpactScore ?? 0,
+      context,
+    );
+  }
+
+  private async creditDynamicEventFinished(params: {
+    eventId: string;
+    startAt?: string;
+    endAt?: string;
+    maxParticipants?: number;
+    organizerId?: string;
+    context: EventTraceContext;
+  }): Promise<ImpactScoreCreditSummary> {
+    const { eventId, startAt, endAt, maxParticipants, organizerId, context } =
+      params;
+
+    const attendees = await this.socialClient.getAllEventAttendees(eventId);
+    const checkedInAttendees = attendees.filter((a) => a.checkedIn);
+
+    // Missing or unparseable dates must never fall back to the current time (replays would
+    // diverge) nor reach the calculator as Invalid Date (NaN duration yields the highest alpha).
+    // Equal fixed dates give a zero duration, i.e. the lowest alpha bracket, deterministically.
+    const parsedStart = startAt ? new Date(startAt) : undefined;
+    const parsedEnd = endAt ? new Date(endAt) : undefined;
+    const datesUsable =
+      parsedStart !== undefined &&
+      parsedEnd !== undefined &&
+      !Number.isNaN(parsedStart.getTime()) &&
+      !Number.isNaN(parsedEnd.getTime());
+    if (!datesUsable) {
+      this.logger.warn(
+        `Event ${eventId} has a missing or invalid startAt/endAt in its payload, using the lowest duration bracket`,
+        { eventId, startAt, endAt },
+      );
+    }
+    const scoringStart = datesUsable ? parsedStart : new Date(0);
+    const scoringEnd = datesUsable ? parsedEnd : new Date(0);
+    const scoringResult = computeEventScoring({
+      attendees: checkedInAttendees.map((a) => ({
+        userId: a.userId,
+        registeredAt: a.registeredAt,
+      })),
+      startAt: scoringStart,
+      endAt: scoringEnd,
+      // Absent beta means no fill bonus (docs/scoring/03 section 6).
+      maxParticipants: maxParticipants ?? 0,
+      organizerId,
+    });
+
+    let credited = 0;
+    let skipped = 0;
+
+    // 1. Credit scored participants
+    for (const participant of scoringResult.participants) {
+      if (participant.points <= 0) continue;
+      const wasCredited = await this.creditUser({
+        eventId,
+        userId: participant.userId,
+        score: participant.points,
+        role: 'PARTICIPANT',
+        rank: participant.rank,
+        formulaVersion: scoringResult.formulaVersion,
+        eventPool: scoringResult.pool,
+        context,
+      });
+      if (wasCredited) {
+        credited += 1;
+      } else {
+        skipped += 1;
+      }
+    }
+
+    // 2. Credit organizer prime if applicable
+    if (organizerId && scoringResult.organizerPoints > 0) {
+      const wasCredited = await this.creditUser({
+        eventId,
+        userId: organizerId,
+        score: scoringResult.organizerPoints,
+        role: 'ORGANIZER',
+        rank: undefined,
+        formulaVersion: scoringResult.formulaVersion,
+        eventPool: scoringResult.pool,
+        context,
+      });
+      if (wasCredited) {
+        credited += 1;
+      } else {
+        skipped += 1;
+      }
+    }
+
+    const summary = { credited, skipped };
+    this.logger.info(
+      `Dynamic impact score for event ${eventId} (v${String(scoringResult.formulaVersion)}): ${String(summary.credited)} credited, ${String(summary.skipped)} already credited`,
+    );
+    return summary;
+  }
+
+  private async creditLegacyEventFinished(
     eventId: string,
     awardedImpactScore: number,
     context: EventTraceContext,
@@ -57,12 +214,12 @@ export class ImpactScoreCrediter {
     let credited = 0;
     // Sequentiel volontaire : une transaction courte par participant, sans rafale sur la base.
     for (const userId of participantIds) {
-      const wasCredited = await this.creditParticipant(
+      const wasCredited = await this.creditUser({
         eventId,
         userId,
-        awardedImpactScore,
+        score: awardedImpactScore,
         context,
-      );
+      });
       if (wasCredited) credited += 1;
     }
 
@@ -73,18 +230,43 @@ export class ImpactScoreCrediter {
     return summary;
   }
 
-  private async creditParticipant(
-    eventId: string,
-    userId: string,
-    score: number,
-    context: EventTraceContext,
-  ): Promise<boolean> {
+  private async creditUser(params: {
+    eventId: string;
+    userId: string;
+    score: number;
+    role?: 'PARTICIPANT' | 'ORGANIZER';
+    rank?: number;
+    formulaVersion?: number;
+    eventPool?: number;
+    context: EventTraceContext;
+  }): Promise<boolean> {
+    const {
+      eventId,
+      userId,
+      score,
+      role,
+      rank,
+      formulaVersion,
+      eventPool,
+      context,
+    } = params;
+
     return this.db.transaction(async (manager) => {
+      const values: Partial<ImpactScoreCreditModel> = {
+        eventId,
+        userId,
+        score,
+      };
+      if (role !== undefined) values.role = role;
+      if (rank !== undefined) values.rank = rank;
+      if (formulaVersion !== undefined) values.formulaVersion = formulaVersion;
+      if (eventPool !== undefined) values.eventPool = eventPool;
+
       const insertResult = await manager
         .createQueryBuilder()
         .insert()
         .into(ImpactScoreCreditModel)
-        .values({ eventId, userId, score })
+        .values(values)
         .orIgnore()
         .returning('event_id')
         .execute();
@@ -101,6 +283,20 @@ export class ImpactScoreCrediter {
         score,
       );
 
+      const payload: {
+        userId: string;
+        eventId: string;
+        scoreIncrement: number;
+        role?: 'PARTICIPANT' | 'ORGANIZER';
+        rank?: number;
+      } = {
+        userId,
+        eventId,
+        scoreIncrement: score,
+      };
+      if (role !== undefined) payload.role = role;
+      if (rank !== undefined) payload.rank = rank;
+
       const notification =
         EventQueueEntity.createFollowUp<UserEventMessagingType.USER_IMPACT_SCORE_CREDITED>(
           context,
@@ -108,7 +304,7 @@ export class ImpactScoreCrediter {
             type: UserEventMessagingType.USER_IMPACT_SCORE_CREDITED,
             emitter: 'post-processor-user',
             emitterId: userId,
-            payload: { userId, eventId, scoreIncrement: score },
+            payload,
             targetServices: [Streams.USER_IMPACT_SCORE_CREDITED],
           },
         );

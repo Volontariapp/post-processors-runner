@@ -1,5 +1,8 @@
 import { jest } from '@jest/globals';
-import type { ISocialInteractionClient } from '../../core/clients/social-interaction.client.js';
+import type {
+  ISocialInteractionClient,
+  EventAttendeeInfo,
+} from '../../core/clients/social-interaction.client.js';
 
 export function createMockSocialInteractionClient(): jest.Mocked<ISocialInteractionClient> {
   return {
@@ -7,5 +10,7 @@ export function createMockSocialInteractionClient(): jest.Mocked<ISocialInteract
     getUserWishEventsCount: jest.fn<() => Promise<number>>(),
     getAllEventParticipantIds:
       jest.fn<(eventId: string) => Promise<string[]>>(),
+    getAllEventAttendees:
+      jest.fn<(eventId: string) => Promise<EventAttendeeInfo[]>>(),
   };
 }

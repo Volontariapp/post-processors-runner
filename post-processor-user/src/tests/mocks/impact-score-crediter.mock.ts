@@ -3,6 +3,7 @@ import type { EventTraceContext } from '@volontariapp/database';
 import type {
   ImpactScoreCrediter,
   ImpactScoreCreditSummary,
+  CreditEventFinishedParams,
 } from '../../core/services/impact-score-crediter.service.js';
 
 export function createMockImpactScoreCrediter(): jest.Mocked<
@@ -12,9 +13,9 @@ export function createMockImpactScoreCrediter(): jest.Mocked<
     creditEventFinished: jest
       .fn<
         (
-          eventId: string,
-          awardedImpactScore: number,
-          context: EventTraceContext,
+          paramsOrEventId: CreditEventFinishedParams | string,
+          legacyScoreOrContext?: number | EventTraceContext,
+          legacyContext?: EventTraceContext,
         ) => Promise<ImpactScoreCreditSummary>
       >()
       .mockResolvedValue({ credited: 0, skipped: 0 }),
