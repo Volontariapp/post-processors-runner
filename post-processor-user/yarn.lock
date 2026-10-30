@@ -4006,10 +4006,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/shared@npm:0.18.0, @volontariapp/shared@npm:^0.18.0":
+"@volontariapp/shared@npm:0.18.0":
   version: 0.18.0
   resolution: "@volontariapp/shared@npm:0.18.0"
   checksum: 10c0/6a8f659f808dba21732a1820540c663df27be0412cfecb5be1e1eded5f472154a294b8eda421669fa9f7c0f21359517b6f3cb7f36314571753c0976e57d79303
+  languageName: node
+  linkType: hard
+
+"@volontariapp/shared@npm:^0.18.1":
+  version: 0.18.1
+  resolution: "@volontariapp/shared@npm:0.18.1"
+  checksum: 10c0/cc0fc3e3bb8d2e9b8a90b813845b41781ed993dd882a2e2527438d2b07f3d9110c6c8216afc6c35808c7a7cb12eeb7b7e48fafe4c6c66157cb30db2c1c276f65
   languageName: node
   linkType: hard
 
@@ -8204,7 +8211,7 @@ __metadata:
     "@volontariapp/monitoring": "npm:^2.4.0"
     "@volontariapp/outbox": "npm:^0.10.22"
     "@volontariapp/post-processors": "npm:^3.4.4"
-    "@volontariapp/shared": "npm:^0.18.0"
+    "@volontariapp/shared": "npm:^0.18.1"
     "@volontariapp/testing": "npm:^1.0.3"
     axios: "npm:^1.20.0"
     class-transformer: "npm:^0.5.1"
