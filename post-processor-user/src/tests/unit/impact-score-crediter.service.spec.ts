@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeEach, jest } from '@jest/globals';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from '@jest/globals';
 import { ImpactScoreCreditModel, UserModel } from '@volontariapp/domain-user';
 import { UserEventMessagingType } from '@volontariapp/messaging';
 import { Streams } from '@volontariapp/shared';
@@ -7,6 +14,7 @@ import { ImpactScoreCrediter } from '../../core/services/impact-score-crediter.s
 import { createMockDataSource } from '../mocks/data-source.mock.js';
 import { createMockSocialInteractionClient } from '../mocks/social-interaction-client.mock.js';
 import { SOURCE_TRACEPARENT } from '../factories/trace.factory.js';
+import { createCheckedInAttendees } from '../factories/event-attendee.factory.js';
 
 const EVENT_ID = 'event-1';
 const SCORE = 40;
@@ -22,17 +30,19 @@ describe('ImpactScoreCrediter', () => {
   let crediter: ImpactScoreCrediter;
   let mockEnv: ReturnType<typeof createMockDataSource>;
   let socialClient: ReturnType<typeof createMockSocialInteractionClient>;
+  let loggerWarn: jest.Mock;
 
   beforeEach(() => {
     mockEnv = createMockDataSource();
     socialClient = createMockSocialInteractionClient();
     crediter = new ImpactScoreCrediter(mockEnv.dataSource, socialClient);
 
+    loggerWarn = jest.fn();
     Object.defineProperty(crediter, 'logger', {
       value: {
         log: jest.fn(),
         info: jest.fn(),
-        warn: jest.fn(),
+        warn: loggerWarn,
         error: jest.fn(),
         debug: jest.fn(),
       },
@@ -264,6 +274,89 @@ describe('ImpactScoreCrediter', () => {
         { id: 'organizer-1' },
         'totalImpactScore',
         expect.anything(),
+      );
+    });
+  });
+  describe('creditEventFinished (pool inputs, docs/scoring/03 section 6)', () => {
+    const TWO_HOURS = {
+      startAt: '2026-06-01T14:00:00Z',
+      endAt: '2026-06-01T16:00:00Z',
+    };
+
+    function creditedParticipantTotal(): number {
+      return mockEnv.manager.increment.mock.calls
+        .filter(([, where]) => !isOrganizerWhere(where))
+        .reduce((sum, call) => sum + Number(call[3]), 0);
+    }
+
+    function isOrganizerWhere(where: unknown): boolean {
+      return (
+        typeof where === 'object' &&
+        where !== null &&
+        'id' in where &&
+        where.id === 'organizer-1'
+      );
+    }
+
+    beforeEach(() => {
+      socialClient.getAllEventAttendees.mockResolvedValue(
+        createCheckedInAttendees(5),
+      );
+      mockEnv.queryBuilder.execute.mockResolvedValue(INSERTED);
+    });
+
+    afterEach(() => {
+      jest.restoreAllMocks();
+    });
+
+    it('gives no fill bonus when maxParticipants is absent (pool 500 for N=5, alpha 1.0)', async () => {
+      await crediter.creditEventFinished({
+        eventId: EVENT_ID,
+        scoringVersion: 1,
+        ...TWO_HOURS,
+        organizerId: 'organizer-1',
+        context: TRACE_CONTEXT,
+      });
+
+      expect(mockEnv.queryBuilder.values).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user-1', eventPool: 500 }),
+      );
+      expect(creditedParticipantTotal()).toBe(500);
+    });
+
+    it('applies the full fill bonus when maxParticipants equals N (pool 1000)', async () => {
+      await crediter.creditEventFinished({
+        eventId: EVENT_ID,
+        scoringVersion: 1,
+        ...TWO_HOURS,
+        maxParticipants: 5,
+        organizerId: 'organizer-1',
+        context: TRACE_CONTEXT,
+      });
+
+      expect(mockEnv.queryBuilder.values).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user-1', eventPool: 1000 }),
+      );
+      expect(creditedParticipantTotal()).toBe(1000);
+    });
+
+    it('uses the lowest alpha bracket and warns, without reading the clock, when dates are missing', async () => {
+      const nowSpy = jest.spyOn(Date, 'now');
+
+      await crediter.creditEventFinished({
+        eventId: EVENT_ID,
+        scoringVersion: 1,
+        organizerId: 'organizer-1',
+        context: TRACE_CONTEXT,
+      });
+
+      expect(nowSpy).not.toHaveBeenCalled();
+      expect(loggerWarn).toHaveBeenCalledWith(
+        expect.stringContaining('no startAt/endAt'),
+        expect.objectContaining({ eventId: EVENT_ID }),
+      );
+      expect(mockEnv.queryBuilder.values).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'user-1', eventPool: 500 }),
       );
     });
   });

@@ -22,6 +22,13 @@ import { UserRoles } from '@volontariapp/shared';
 import { Logger } from '@volontariapp/logger';
 import { SOCIAL_PACKAGE } from '../../infrastructure/grpc/constants.js';
 
+/**
+ * Sentinel used when an attendee has no registration date: the latest representable date,
+ * so such attendees rank after all dated ones (ties broken by userId in the calculator).
+ * Constant on purpose: a time-dependent fallback would change ranks between replays.
+ */
+export const MISSING_REGISTERED_AT = new Date(8_640_000_000_000_000);
+
 export interface EventAttendeeInfo {
   userId: string;
   registeredAt: Date;
@@ -179,8 +186,16 @@ export class SocialInteractionClient
 
       if (response.attendees.length > 0) {
         for (const attendee of response.attendees) {
-          const registeredAt =
-            GrpcDateMapper.toDate(attendee.registeredAt) ?? new Date();
+          const parsedRegisteredAt = GrpcDateMapper.toDate(
+            attendee.registeredAt,
+          );
+          if (parsedRegisteredAt === undefined) {
+            this.logger.warn(
+              `Attendee ${attendee.userId} of event ${eventId} has no registeredAt, ranking last by userId`,
+              { eventId, userId: attendee.userId },
+            );
+          }
+          const registeredAt = parsedRegisteredAt ?? MISSING_REGISTERED_AT;
           const checkedIn = attendee.checkedInAt !== undefined;
           allAttendees.push({
             userId: attendee.userId,

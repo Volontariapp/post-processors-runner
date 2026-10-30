@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
-import { SocialInteractionClient } from '../../core/clients/social-interaction.client.js';
+import {
+  SocialInteractionClient,
+  MISSING_REGISTERED_AT,
+} from '../../core/clients/social-interaction.client.js';
 import type { ClientGrpc } from '@nestjs/microservices';
 import type { JwtService } from '@volontariapp/auth';
 import { UserRoles } from '@volontariapp/shared';
@@ -21,6 +24,7 @@ describe('SocialInteractionClient', () => {
     getEventAttendees: jest.Mock;
   };
   let mockJwtService: jest.Mocked<JwtService>;
+  let mockLogger: { warn: jest.Mock; [key: string]: jest.Mock };
 
   beforeEach(() => {
     mockQueryService = {
@@ -42,7 +46,7 @@ describe('SocialInteractionClient', () => {
 
     client = new SocialInteractionClient(mockClientGrpc, mockJwtService);
 
-    const mockLogger = {
+    mockLogger = {
       log: jest.fn(),
       info: jest.fn(),
       warn: jest.fn(),
@@ -287,6 +291,40 @@ describe('SocialInteractionClient', () => {
       expect(
         mockParticipationQueryService.getEventAttendees,
       ).toHaveBeenCalledTimes(2);
+    });
+
+    it('ranks attendees without registeredAt last with a fixed date and a warning', async () => {
+      mockParticipationQueryService.getEventAttendees.mockReturnValueOnce(
+        of({
+          attendees: [
+            { userId: 'user-undated', registeredAt: undefined },
+            {
+              userId: 'user-1',
+              registeredAt: { seconds: 1717200000, nanos: 0 },
+            },
+          ],
+          pagination: { page: 1, limit: 50, total: 2, totalPages: 1 },
+        }),
+      );
+
+      const attendees = await client.getAllEventAttendees('event-abc');
+
+      expect(attendees).toEqual([
+        {
+          userId: 'user-undated',
+          registeredAt: MISSING_REGISTERED_AT,
+          checkedIn: false,
+        },
+        {
+          userId: 'user-1',
+          registeredAt: new Date(1717200000 * 1000),
+          checkedIn: false,
+        },
+      ]);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        expect.stringContaining('user-undated'),
+        expect.objectContaining({ eventId: 'event-abc' }),
+      );
     });
 
     it('should return empty array if no attendees found', async () => {

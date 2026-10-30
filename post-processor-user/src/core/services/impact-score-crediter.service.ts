@@ -117,15 +117,25 @@ export class ImpactScoreCrediter {
     const attendees = await this.socialClient.getAllEventAttendees(eventId);
     const checkedInAttendees = attendees.filter((a) => a.checkedIn);
 
-    const now = new Date();
+    // Missing dates must never fall back to the current time: replays would diverge.
+    // Equal fixed dates give a zero duration, i.e. the lowest alpha bracket, deterministically.
+    if (!startAt || !endAt) {
+      this.logger.warn(
+        `Event ${eventId} has no startAt/endAt in its payload, using the lowest duration bracket`,
+        { eventId, startAt, endAt },
+      );
+    }
+    const scoringStart = startAt && endAt ? new Date(startAt) : new Date(0);
+    const scoringEnd = startAt && endAt ? new Date(endAt) : new Date(0);
     const scoringResult = computeEventScoring({
       attendees: checkedInAttendees.map((a) => ({
         userId: a.userId,
         registeredAt: a.registeredAt,
       })),
-      startAt: startAt ? new Date(startAt) : now,
-      endAt: endAt ? new Date(endAt) : now,
-      maxParticipants: maxParticipants ?? checkedInAttendees.length,
+      startAt: scoringStart,
+      endAt: scoringEnd,
+      // Absent beta means no fill bonus (docs/scoring/03 section 6).
+      maxParticipants: maxParticipants ?? 0,
       organizerId,
     });
 
