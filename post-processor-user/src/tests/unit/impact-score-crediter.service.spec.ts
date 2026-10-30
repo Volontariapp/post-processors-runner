@@ -161,4 +161,110 @@ describe('ImpactScoreCrediter', () => {
       ).rejects.toThrow('db down');
     });
   });
+
+  describe('creditEventFinished (dynamic scoring)', () => {
+    it('credits present attendees and organizer according to computeEventScoring when N >= 3', async () => {
+      socialClient.getAllEventAttendees.mockResolvedValue([
+        {
+          userId: 'user-1',
+          registeredAt: new Date('2026-06-01T10:00:00Z'),
+          checkedIn: true,
+        },
+        {
+          userId: 'user-2',
+          registeredAt: new Date('2026-06-01T10:05:00Z'),
+          checkedIn: true,
+        },
+        {
+          userId: 'user-3',
+          registeredAt: new Date('2026-06-01T10:10:00Z'),
+          checkedIn: true,
+        },
+        {
+          userId: 'user-absent',
+          registeredAt: new Date('2026-06-01T10:15:00Z'),
+          checkedIn: false,
+        },
+      ]);
+      mockEnv.queryBuilder.execute.mockResolvedValue(INSERTED);
+
+      const summary = await crediter.creditEventFinished({
+        eventId: EVENT_ID,
+        scoringVersion: 1,
+        startAt: '2026-06-01T14:00:00Z',
+        endAt: '2026-06-01T16:00:00Z',
+        maxParticipants: 10,
+        organizerId: 'organizer-1',
+        context: TRACE_CONTEXT,
+      });
+
+      // 3 present participants + 1 organizer = 4 credited
+      expect(summary.credited).toBe(4);
+      expect(summary.skipped).toBe(0);
+
+      // Verify that user-absent was NOT credited
+      expect(mockEnv.manager.increment).not.toHaveBeenCalledWith(
+        UserModel,
+        { id: 'user-absent' },
+        'totalImpactScore',
+        expect.anything(),
+      );
+
+      // Verify organizer was credited with role: 'ORGANIZER'
+      expect(mockEnv.queryBuilder.values).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId: EVENT_ID,
+          userId: 'organizer-1',
+          role: 'ORGANIZER',
+          formulaVersion: 1,
+        }),
+      );
+
+      // Verify participant was credited with role: 'PARTICIPANT' and rank
+      expect(mockEnv.queryBuilder.values).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId: EVENT_ID,
+          userId: 'user-1',
+          role: 'PARTICIPANT',
+          rank: 1,
+          formulaVersion: 1,
+        }),
+      );
+    });
+
+    it('does not credit organizer prime when present attendees N < 3 (anti-Sybil)', async () => {
+      socialClient.getAllEventAttendees.mockResolvedValue([
+        {
+          userId: 'user-1',
+          registeredAt: new Date('2026-06-01T10:00:00Z'),
+          checkedIn: true,
+        },
+        {
+          userId: 'user-2',
+          registeredAt: new Date('2026-06-01T10:05:00Z'),
+          checkedIn: true,
+        },
+      ]);
+      mockEnv.queryBuilder.execute.mockResolvedValue(INSERTED);
+
+      const summary = await crediter.creditEventFinished({
+        eventId: EVENT_ID,
+        scoringVersion: 1,
+        startAt: '2026-06-01T14:00:00Z',
+        endAt: '2026-06-01T16:00:00Z',
+        maxParticipants: 10,
+        organizerId: 'organizer-1',
+        context: TRACE_CONTEXT,
+      });
+
+      // 2 participants credited, organizer gets 0 prime
+      expect(summary.credited).toBe(2);
+      expect(mockEnv.manager.increment).not.toHaveBeenCalledWith(
+        UserModel,
+        { id: 'organizer-1' },
+        'totalImpactScore',
+        expect.anything(),
+      );
+    });
+  });
 });

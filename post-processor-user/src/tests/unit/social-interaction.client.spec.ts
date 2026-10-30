@@ -18,6 +18,7 @@ describe('SocialInteractionClient', () => {
   let mockParticipationQueryService: {
     adminGetUserWishEvent: jest.Mock;
     getEventParticipants: jest.Mock;
+    getEventAttendees: jest.Mock;
   };
   let mockJwtService: jest.Mocked<JwtService>;
 
@@ -28,6 +29,7 @@ describe('SocialInteractionClient', () => {
     mockParticipationQueryService = {
       adminGetUserWishEvent: jest.fn(),
       getEventParticipants: jest.fn(),
+      getEventAttendees: jest.fn(),
     };
 
     mockClientGrpc = createMock<ClientGrpc>();
@@ -227,6 +229,77 @@ describe('SocialInteractionClient', () => {
         await client.getAllEventParticipantIds('event-xyz');
 
       expect(participantIds).toEqual([]);
+    });
+  });
+
+  describe('getAllEventAttendees', () => {
+    it('should paginate through all pages and parse attendee dates and check-in status', async () => {
+      mockParticipationQueryService.getEventAttendees
+        .mockReturnValueOnce(
+          of({
+            attendees: [
+              {
+                userId: 'user-1',
+                registeredAt: { seconds: 1717200000, nanos: 0 },
+                checkedInAt: { seconds: 1717203600, nanos: 0 },
+              },
+              {
+                userId: 'user-2',
+                registeredAt: { seconds: 1717200100, nanos: 0 },
+                checkedInAt: undefined,
+              },
+            ],
+            pagination: { page: 1, limit: 50, total: 3, totalPages: 2 },
+          }),
+        )
+        .mockReturnValueOnce(
+          of({
+            attendees: [
+              {
+                userId: 'user-3',
+                registeredAt: { seconds: 1717200200, nanos: 0 },
+                checkedInAt: { seconds: 1717203700, nanos: 0 },
+              },
+            ],
+            pagination: { page: 2, limit: 50, total: 3, totalPages: 2 },
+          }),
+        );
+
+      const attendees = await client.getAllEventAttendees('event-abc');
+
+      expect(attendees).toEqual([
+        {
+          userId: 'user-1',
+          registeredAt: new Date(1717200000 * 1000),
+          checkedIn: true,
+        },
+        {
+          userId: 'user-2',
+          registeredAt: new Date(1717200100 * 1000),
+          checkedIn: false,
+        },
+        {
+          userId: 'user-3',
+          registeredAt: new Date(1717200200 * 1000),
+          checkedIn: true,
+        },
+      ]);
+      expect(
+        mockParticipationQueryService.getEventAttendees,
+      ).toHaveBeenCalledTimes(2);
+    });
+
+    it('should return empty array if no attendees found', async () => {
+      mockParticipationQueryService.getEventAttendees.mockReturnValueOnce(
+        of({
+          attendees: [],
+          pagination: { page: 1, limit: 50, total: 0, totalPages: 1 },
+        }),
+      );
+
+      const attendees = await client.getAllEventAttendees('event-empty');
+
+      expect(attendees).toEqual([]);
     });
   });
 });

@@ -34,7 +34,15 @@ export class EventFinishedImpactScorePostProcessor extends BatchPostProcessor<Ev
     events: BatchEventItem<EventEventMessagingType.EVENT_FINISHED>[],
   ): Promise<void> {
     for (const { event, messageId } of events) {
-      const { eventId, awardedImpactScore } = event.payload.after;
+      const {
+        eventId,
+        awardedImpactScore,
+        scoringVersion,
+        startAt,
+        endAt,
+        maxParticipants,
+        organizerId,
+      } = event.payload.after;
 
       if (!eventId) {
         this.logger.error(
@@ -48,20 +56,28 @@ export class EventFinishedImpactScorePostProcessor extends BatchPostProcessor<Ev
 
       // Les messages deja presents dans le stream avant l'ajout du champ n'ont pas de score :
       // on les ignore au lieu de crediter 0 ou de bloquer le groupe en boucle de retry.
-      if (!Number.isFinite(awardedImpactScore)) {
+      if (
+        scoringVersion === undefined &&
+        !Number.isFinite(awardedImpactScore)
+      ) {
         this.logger.warn(
-          `EVENT_FINISHED for event ${eventId} carries no awardedImpactScore (emitted before the payload had it), skipping credit`,
+          `EVENT_FINISHED for event ${eventId} carries neither scoringVersion nor awardedImpactScore (emitted before the payload had it), skipping credit`,
           { messageId, eventId },
         );
         continue;
       }
 
       try {
-        await this.impactScoreCrediter.creditEventFinished(
+        await this.impactScoreCrediter.creditEventFinished({
           eventId,
           awardedImpactScore,
-          event,
-        );
+          scoringVersion,
+          startAt,
+          endAt,
+          maxParticipants,
+          organizerId,
+          context: event,
+        });
       } catch (err: unknown) {
         this.logger.error(
           `Failed to credit impact score for event ${eventId}: ${err instanceof Error ? err.message : String(err)}`,

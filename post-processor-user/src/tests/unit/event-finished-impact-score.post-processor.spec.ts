@@ -61,9 +61,34 @@ describe('EventFinishedImpactScorePostProcessor', () => {
       await postProcessor['processEvents']([item]);
 
       expect(crediter.creditEventFinished).toHaveBeenCalledWith(
-        'event-123',
-        40,
-        expect.anything(),
+        expect.objectContaining({
+          eventId: 'event-123',
+          awardedImpactScore: 40,
+        }),
+      );
+    });
+
+    it('passes dynamic scoring fields when scoringVersion is present', async () => {
+      const item = createEventFinishedBatchItem({
+        eventId: 'event-123',
+        scoringVersion: 1,
+        startAt: '2026-06-01T10:00:00.000Z',
+        endAt: '2026-06-01T12:00:00.000Z',
+        maxParticipants: 10,
+        organizerId: 'org-456',
+      });
+
+      await postProcessor['processEvents']([item]);
+
+      expect(crediter.creditEventFinished).toHaveBeenCalledWith(
+        expect.objectContaining({
+          eventId: 'event-123',
+          scoringVersion: 1,
+          startAt: '2026-06-01T10:00:00.000Z',
+          endAt: '2026-06-01T12:00:00.000Z',
+          maxParticipants: 10,
+          organizerId: 'org-456',
+        }),
       );
     });
 
@@ -76,11 +101,11 @@ describe('EventFinishedImpactScorePostProcessor', () => {
       await postProcessor['processEvents']([item]);
 
       expect(crediter.creditEventFinished).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.any(Number),
         expect.objectContaining({
-          correlationId: 'corr-finished-9',
-          traceId: 'trace-finished-9',
+          context: expect.objectContaining({
+            correlationId: 'corr-finished-9',
+            traceId: 'trace-finished-9',
+          }),
         }),
       );
     });
@@ -102,21 +127,26 @@ describe('EventFinishedImpactScorePostProcessor', () => {
       await postProcessor['processEvents'](items);
 
       expect(crediter.creditEventFinished).toHaveBeenCalledTimes(2);
-      expect(crediter.creditEventFinished).toHaveBeenCalledWith(
-        'event-1',
-        10,
-        expect.anything(),
+      expect(crediter.creditEventFinished).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          eventId: 'event-1',
+          awardedImpactScore: 10,
+        }),
       );
-      expect(crediter.creditEventFinished).toHaveBeenCalledWith(
-        'event-2',
-        25,
-        expect.anything(),
+      expect(crediter.creditEventFinished).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          eventId: 'event-2',
+          awardedImpactScore: 25,
+        }),
       );
     });
 
-    it('skips a message emitted before the payload carried the score', async () => {
+    it('skips a message emitted before the payload carried the score or scoringVersion', async () => {
       const item = createEventFinishedBatchItem();
       Reflect.deleteProperty(item.event.payload.after, 'awardedImpactScore');
+      Reflect.deleteProperty(item.event.payload.after, 'scoringVersion');
 
       await postProcessor['processEvents']([item]);
 
