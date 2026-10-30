@@ -117,16 +117,24 @@ export class ImpactScoreCrediter {
     const attendees = await this.socialClient.getAllEventAttendees(eventId);
     const checkedInAttendees = attendees.filter((a) => a.checkedIn);
 
-    // Missing dates must never fall back to the current time: replays would diverge.
+    // Missing or unparseable dates must never fall back to the current time (replays would
+    // diverge) nor reach the calculator as Invalid Date (NaN duration yields the highest alpha).
     // Equal fixed dates give a zero duration, i.e. the lowest alpha bracket, deterministically.
-    if (!startAt || !endAt) {
+    const parsedStart = startAt ? new Date(startAt) : undefined;
+    const parsedEnd = endAt ? new Date(endAt) : undefined;
+    const datesUsable =
+      parsedStart !== undefined &&
+      parsedEnd !== undefined &&
+      !Number.isNaN(parsedStart.getTime()) &&
+      !Number.isNaN(parsedEnd.getTime());
+    if (!datesUsable) {
       this.logger.warn(
-        `Event ${eventId} has no startAt/endAt in its payload, using the lowest duration bracket`,
+        `Event ${eventId} has a missing or invalid startAt/endAt in its payload, using the lowest duration bracket`,
         { eventId, startAt, endAt },
       );
     }
-    const scoringStart = startAt && endAt ? new Date(startAt) : new Date(0);
-    const scoringEnd = startAt && endAt ? new Date(endAt) : new Date(0);
+    const scoringStart = datesUsable ? parsedStart : new Date(0);
+    const scoringEnd = datesUsable ? parsedEnd : new Date(0);
     const scoringResult = computeEventScoring({
       attendees: checkedInAttendees.map((a) => ({
         userId: a.userId,

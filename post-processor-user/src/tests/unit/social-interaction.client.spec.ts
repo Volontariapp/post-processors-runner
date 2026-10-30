@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 import {
   SocialInteractionClient,
-  MISSING_REGISTERED_AT,
+  MISSING_REGISTERED_AT_MS,
 } from '../../core/clients/social-interaction.client.js';
 import type { ClientGrpc } from '@nestjs/microservices';
 import type { JwtService } from '@volontariapp/auth';
@@ -312,7 +312,7 @@ describe('SocialInteractionClient', () => {
       expect(attendees).toEqual([
         {
           userId: 'user-undated',
-          registeredAt: MISSING_REGISTERED_AT,
+          registeredAt: new Date(MISSING_REGISTERED_AT_MS),
           checkedIn: false,
         },
         {

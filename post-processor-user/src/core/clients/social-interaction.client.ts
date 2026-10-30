@@ -27,7 +27,7 @@ import { SOCIAL_PACKAGE } from '../../infrastructure/grpc/constants.js';
  * so such attendees rank after all dated ones (ties broken by userId in the calculator).
  * Constant on purpose: a time-dependent fallback would change ranks between replays.
  */
-export const MISSING_REGISTERED_AT = new Date(8_640_000_000_000_000);
+export const MISSING_REGISTERED_AT_MS = 8_640_000_000_000_000;
 
 export interface EventAttendeeInfo {
   userId: string;
@@ -195,7 +195,8 @@ export class SocialInteractionClient
               { eventId, userId: attendee.userId },
             );
           }
-          const registeredAt = parsedRegisteredAt ?? MISSING_REGISTERED_AT;
+          const registeredAt =
+            parsedRegisteredAt ?? new Date(MISSING_REGISTERED_AT_MS);
           const checkedIn = attendee.checkedInAt !== undefined;
           allAttendees.push({
             userId: attendee.userId,

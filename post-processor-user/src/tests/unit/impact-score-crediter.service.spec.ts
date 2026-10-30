@@ -340,6 +340,36 @@ describe('ImpactScoreCrediter', () => {
       expect(creditedParticipantTotal()).toBe(1000);
     });
 
+    it.each([
+      [
+        'garbage startAt',
+        { startAt: 'garbage', endAt: '2026-06-01T16:00:00Z' },
+      ],
+      ['garbage endAt', { startAt: '2026-06-01T14:00:00Z', endAt: 'garbage' }],
+    ])(
+      'treats %s as missing dates: lowest alpha, warning, no clock read',
+      async (_label, dates) => {
+        const nowSpy = jest.spyOn(Date, 'now');
+
+        await crediter.creditEventFinished({
+          eventId: EVENT_ID,
+          scoringVersion: 1,
+          ...dates,
+          organizerId: 'organizer-1',
+          context: TRACE_CONTEXT,
+        });
+
+        expect(nowSpy).not.toHaveBeenCalled();
+        expect(loggerWarn).toHaveBeenCalledWith(
+          expect.stringContaining('invalid startAt/endAt'),
+          expect.objectContaining({ eventId: EVENT_ID, ...dates }),
+        );
+        expect(mockEnv.queryBuilder.values).toHaveBeenCalledWith(
+          expect.objectContaining({ userId: 'user-1', eventPool: 500 }),
+        );
+      },
+    );
+
     it('uses the lowest alpha bracket and warns, without reading the clock, when dates are missing', async () => {
       const nowSpy = jest.spyOn(Date, 'now');
 
@@ -352,7 +382,7 @@ describe('ImpactScoreCrediter', () => {
 
       expect(nowSpy).not.toHaveBeenCalled();
       expect(loggerWarn).toHaveBeenCalledWith(
-        expect.stringContaining('no startAt/endAt'),
+        expect.stringContaining('startAt/endAt'),
         expect.objectContaining({ eventId: EVENT_ID }),
       );
       expect(mockEnv.queryBuilder.values).toHaveBeenCalledWith(
