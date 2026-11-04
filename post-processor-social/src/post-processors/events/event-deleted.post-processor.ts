@@ -113,6 +113,7 @@ export class EventDeletedPostProcessor extends BatchPostProcessor<EventEventMess
           'Error batch inserting EVENT_SOCIAL_DELETED into event_queue',
           error,
         );
+        throw error;
       }
     }
   }
