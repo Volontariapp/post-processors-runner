@@ -59,7 +59,7 @@ describe('UserCreatedPostProcessor', () => {
     expect(mockEventQueueRepo.save).toHaveBeenCalledTimes(1);
   });
 
-  it('should purge the node again and send no feedback when the user was already deleted (G3)', async () => {
+  it('should purge the node again and still send the feedback when the user was already deleted (G3)', async () => {
     const batchItem = UserCreatedFactory.buildBatchEventItem();
     const userId = batchItem.event.payload.after.id;
     const createSpy = jest
@@ -80,6 +80,6 @@ describe('UserCreatedPostProcessor', () => {
     );
     expect(purgeSpy).toHaveBeenCalledTimes(1);
     expect(purgeSpy.mock.calls[0][0].value).toBe(userId);
-    expect(mockEventQueueRepo.save).not.toHaveBeenCalled();
+    expect(mockEventQueueRepo.save).toHaveBeenCalledTimes(1);
   });
 });

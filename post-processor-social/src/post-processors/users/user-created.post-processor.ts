@@ -49,7 +49,8 @@ export class UserCreatedPostProcessor extends BatchPostProcessor<UserEventMessag
           const userId = new UserId(payload.id);
           await this.socialUserService.createUser(userId);
           // Checked after the creation, see tombstone.ts: a deletion processed in between
-          // has either set the marker already or will purge after this node exists.
+          // has either set the marker already or will purge after this node exists. The
+          // feedback is still sent so the USER_CREATION gather completes.
           const deleted = await findDeleted(this.redis, 'user', [payload.id]);
           if (deleted.has(payload.id)) {
             await this.socialUserService.purgeUser(userId);
@@ -57,12 +58,12 @@ export class UserCreatedPostProcessor extends BatchPostProcessor<UserEventMessag
               'USER_CREATED processed after USER_DELETED: social user node purged again',
               { messageId, userId: payload.id },
             );
-            return;
+          } else {
+            this.logger.info('Successfully created social user node', {
+              messageId,
+              userId: payload.id,
+            });
           }
-          this.logger.info('Successfully created social user node', {
-            messageId,
-            userId: payload.id,
-          });
 
           const payloadSocialEvent: IUserSocialCreatedPayload = {
             userId: payload.id,
