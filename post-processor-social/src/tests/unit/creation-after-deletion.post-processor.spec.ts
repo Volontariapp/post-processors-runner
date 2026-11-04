@@ -66,7 +66,7 @@ describe('creation processed after the deletion (G4)', () => {
       );
     });
 
-    it('should remove again only the created events already deleted, and skip their feedback', async () => {
+    it('should remove again only the created events already deleted, and still send every feedback', async () => {
       const [kept, deleted] = [
         CreationEventsFactory.eventCreated(),
         CreationEventsFactory.eventCreated(),
@@ -95,7 +95,7 @@ describe('creation processed after the deletion (G4)', () => {
         deleteSpy.mock.invocationCallOrder[0],
       );
       const saved = typeormRepository.save.mock.calls[0][0] as unknown[];
-      expect(saved).toHaveLength(1);
+      expect(saved).toHaveLength(2);
     });
   });
 
@@ -132,7 +132,7 @@ describe('creation processed after the deletion (G4)', () => {
       );
     });
 
-    it('should remove again only the created posts already deleted, and skip their feedback', async () => {
+    it('should remove again only the created posts already deleted, and still send every feedback', async () => {
       const [kept, deleted] = [
         CreationEventsFactory.postCreated(),
         CreationEventsFactory.postCreated(),
@@ -157,7 +157,7 @@ describe('creation processed after the deletion (G4)', () => {
         deletedId,
       ]);
       const saved = typeormRepository.save.mock.calls[0][0] as unknown[];
-      expect(saved).toHaveLength(1);
+      expect(saved).toHaveLength(2);
     });
   });
 });

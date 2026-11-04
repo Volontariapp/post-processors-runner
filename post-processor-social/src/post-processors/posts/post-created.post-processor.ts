@@ -102,7 +102,8 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
     }
 
     // Checked after the creation, see tombstone.ts (G4): a post.deleted processed in between has
-    // either set its marker already or removes the node after it was created here.
+    // either set its marker already or removes the node after it was created here. The feedback
+    // is still sent so the POST_CREATION gather completes (the client then gets post.deleted).
     const deleted = await findDeleted(
       this.redis,
       'post',
@@ -123,7 +124,6 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
 
     for (const { event } of validEvents) {
       const payload: IPostCreatedPayload = event.payload.after;
-      if (deleted.has(payload.postId)) continue;
 
       const payloadPostSocialCreated: IPostSocialCreatedPayload = {
         postId: payload.postId,

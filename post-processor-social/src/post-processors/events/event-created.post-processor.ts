@@ -30,10 +30,8 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
   protected async processEvents(
     events: BatchEventItem<EventEventMessagingType.EVENT_CREATED>[],
   ): Promise<void> {
-    const feedbacks: {
-      eventId: string;
-      entity: EventQueueEntity<SocialEventMessagingType.EVENT_SOCIAL_CREATED>;
-    }[] = [];
+    const queueEntities: EventQueueEntity<SocialEventMessagingType.EVENT_SOCIAL_CREATED>[] =
+      [];
     const neo4jBatch: { eventId: string; organizerId: string }[] = [];
 
     events.forEach(({ event, messageId }) => {
@@ -78,10 +76,9 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
           },
         );
 
-      feedbacks.push({ eventId: payload.eventId, entity: queueEntity });
+      queueEntities.push(queueEntity);
     });
 
-    let deleted = new Set<string>();
     if (neo4jBatch.length > 0) {
       try {
         await this.participationService.createEventsBatch(neo4jBatch);
@@ -93,8 +90,9 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
       }
 
       // Checked after the creation, see tombstone.ts (G4): an event.deleted processed in between
-      // has either set its marker already or removes the node after it was created here.
-      deleted = await findDeleted(
+      // has either set its marker already or removes the node after it was created here. The
+      // feedback is still sent so the EVENT_CREATION gather completes.
+      const deleted = await findDeleted(
         this.redis,
         'event',
         neo4jBatch.map(({ eventId }) => eventId),
@@ -109,10 +107,6 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
         );
       }
     }
-
-    const queueEntities = feedbacks
-      .filter(({ eventId }) => !deleted.has(eventId))
-      .map(({ entity }) => entity);
 
     if (queueEntities.length > 0) {
       try {
