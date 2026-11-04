@@ -17,3 +17,20 @@ jobs:
       service-name: post-processors-runner
       services: '["post-processor-user", "post-processor-event", "post-processor-post", "post-processor-social", "post-processor-storage", "post-processor-ranking"]'
     secrets: inherit
+
+  notify-ready:
+    needs: [ci]
+    # `needs:` implies success(): without !failure() a skipped job would skip the notification.
+    if: ${{ !failure() && !cancelled() && github.event_name == 'pull_request' }}
+    # A reusable workflow cannot raise the permissions of its caller.
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    uses: Volontariapp/ci-tools/.github/workflows/pr-ready-notify.yml@main
+    with:
+      channel: backend
+    secrets:
+      DISCORD_WEBHOOK_BACKEND: ${{ secrets.DISCORD_WEBHOOK_BACKEND }}
+      DISCORD_WEBHOOK_FRONTEND: ${{ secrets.DISCORD_WEBHOOK_FRONTEND }}
+      ORG_REPO_TOKEN: ${{ secrets.ORG_REPO_TOKEN }}
