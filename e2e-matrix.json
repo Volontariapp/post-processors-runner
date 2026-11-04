@@ -1,0 +1,12 @@
+{
+  "api-gateway": "main",
+  "ms-user": "main",
+  "ms-event": "main",
+  "ms-social": "main",
+  "ms-post": "main",
+  "ms-storage": "main",
+  "ms-ranking": "main",
+  "ws-service": "main",
+  "outbox-runners": "main",
+  "workers-runners": "main"
+}
