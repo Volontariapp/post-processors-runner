@@ -72,6 +72,8 @@ export function createMockRedisClient(): jest.Mocked<Redis> {
     call: jest.fn<Redis['call']>().mockResolvedValue('OK'),
     xack: jest.fn<Redis['xack']>().mockResolvedValue(1),
     xadd: jest.fn<Redis['xadd']>().mockResolvedValue('1700000000000-0'),
+    set: jest.fn<Redis['set']>().mockResolvedValue('OK'),
+    exists: jest.fn<Redis['exists']>().mockResolvedValue(0),
     duplicate: jest.fn<Redis['duplicate']>(),
   } as unknown as jest.Mocked<Redis>;
 

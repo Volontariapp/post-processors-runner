@@ -7,6 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 import { UserDeletedPostProcessor } from '../../post-processors/users/user-deleted.post-processor.js';
+import { USER_TOMBSTONE_TTL_SECONDS } from '../../post-processors/users/user-tombstone.js';
 import {
   UserEventMessagingType,
   SocialEventMessagingType,
@@ -32,12 +33,13 @@ describe('UserDeletedPostProcessor', () => {
   let postProcessor: UserDeletedPostProcessor;
   let socialUserService: SocialUserService;
   let mockEventQueueRepo: IMockEventQueueRepository;
+  let redisClient: ReturnType<typeof createMockRedisClient>;
 
   beforeEach(() => {
     socialUserService = createMockSocialUserService();
     mockEventQueueRepo = createMockUserDeletedEventQueueRepository();
 
-    const redisClient = createMockRedisClient();
+    redisClient = createMockRedisClient();
     const options = createMockOptions();
 
     postProcessor = new UserDeletedPostProcessor(
@@ -67,6 +69,27 @@ describe('UserDeletedPostProcessor', () => {
   });
 
   describe('processEvents', () => {
+    it('should mark the user as deleted before purging the node (G3)', async () => {
+      const batchItem = UserDeletedFactory.buildBatchEventItem();
+      const userId = batchItem.event.payload.after.id;
+      const setSpy = jest.spyOn(redisClient, 'set');
+      const purgeSpy = jest
+        .spyOn(socialUserService, 'purgeUser')
+        .mockResolvedValue(undefined);
+
+      await postProcessor['processEvents']([batchItem]);
+
+      expect(setSpy).toHaveBeenCalledWith(
+        `post-processor-social:user-tombstone:${userId}`,
+        '1',
+        'EX',
+        USER_TOMBSTONE_TTL_SECONDS,
+      );
+      expect(setSpy.mock.invocationCallOrder[0]).toBeLessThan(
+        purgeSpy.mock.invocationCallOrder[0],
+      );
+    });
+
     it('should process USER_DELETED event, call socialUserService.purgeUser and save to event_queue', async () => {
       const userId = '123e4567-e89b-12d3-a456-426614174000';
       const batchItem = UserDeletedFactory.buildBatchEventItem({ id: userId });
