@@ -21,6 +21,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Streams } from '@volontariapp/shared';
 import { EventQueueWriter, EventQueueRepository } from '@volontariapp/outbox';
+import { isUserDeleted } from './user-tombstone.js';
 
 databaseMapper.registerBidirectional(EventQueueModel, EventQueueEntity);
 
@@ -45,7 +46,18 @@ export class UserCreatedPostProcessor extends BatchPostProcessor<UserEventMessag
         }
 
         try {
-          await this.socialUserService.createUser(new UserId(payload.id));
+          const userId = new UserId(payload.id);
+          await this.socialUserService.createUser(userId);
+          // Checked after the creation, see user-tombstone.ts: a deletion processed in between
+          // has either set the marker already or will purge after this node exists.
+          if (await isUserDeleted(this.redis, payload.id)) {
+            await this.socialUserService.purgeUser(userId);
+            this.logger.warn(
+              'USER_CREATED processed after USER_DELETED: social user node purged again',
+              { messageId, userId: payload.id },
+            );
+            return;
+          }
           this.logger.info('Successfully created social user node', {
             messageId,
             userId: payload.id,

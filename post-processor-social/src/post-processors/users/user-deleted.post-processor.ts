@@ -24,6 +24,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Streams } from '@volontariapp/shared';
 import { EventQueueWriter, EventQueueRepository } from '@volontariapp/outbox';
+import { markUserDeleted } from './user-tombstone.js';
 
 databaseMapper.registerBidirectional(EventQueueModel, EventQueueEntity);
 
@@ -47,6 +48,7 @@ export class UserDeletedPostProcessor extends BatchPostProcessor<UserEventMessag
       }
 
       try {
+        await markUserDeleted(this.redis, payload.id);
         await this.socialUserService.purgeUser(new UserId(payload.id));
         this.logger.info('Successfully purged social user node', {
           messageId,
