@@ -28,6 +28,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Streams } from '@volontariapp/shared';
 import { EventQueueWriter, EventQueueRepository } from '@volontariapp/outbox';
+import { findDeleted } from '../tombstone.js';
 
 databaseMapper.registerBidirectional(EventQueueModel, EventQueueEntity);
 
@@ -100,11 +101,29 @@ export class PostCreatedPostProcessor extends BatchPostProcessor<PostEventMessag
       throw error;
     }
 
+    // Checked after the creation, see tombstone.ts (G4): a post.deleted processed in between has
+    // either set its marker already or removes the node after it was created here.
+    const deleted = await findDeleted(
+      this.redis,
+      'post',
+      creationPairs.map(({ postId }) => postId.value),
+    );
+    if (deleted.size > 0) {
+      await this.publicationService.deletePosts(
+        [...deleted].map((id) => new PostId(id)),
+      );
+      this.logger.warn(
+        `POST_CREATED processed after POST_DELETED: ${String(deleted.size)} social post nodes removed again`,
+        { postIds: [...deleted] },
+      );
+    }
+
     const queueEntities: EventQueueEntity<SocialEventMessagingType.POST_SOCIAL_CREATED>[] =
       [];
 
     for (const { event } of validEvents) {
       const payload: IPostCreatedPayload = event.payload.after;
+      if (deleted.has(payload.postId)) continue;
 
       const payloadPostSocialCreated: IPostSocialCreatedPayload = {
         postId: payload.postId,
