@@ -1,6 +1,12 @@
 /* eslint-disable @typescript-eslint/unbound-method */
-import type { jest } from '@jest/globals';
-import { describe, it, expect, beforeEach } from '@jest/globals';
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  jest,
+} from '@jest/globals';
 import { EventDeletedPostProcessor } from '../../post-processors/events/event-deleted.post-processor.js';
 import {
   EventEventMessagingType,
@@ -42,6 +48,10 @@ describe('EventDeletedPostProcessor', () => {
 
     // Replace internal logger with mock logger
     postProcessor['logger'] = logger;
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
   describe('shouldProcess', () => {
@@ -153,6 +163,20 @@ describe('EventDeletedPostProcessor', () => {
 
       await expect(postProcessor['processEvents']([item])).rejects.toThrow(
         'Neo4j connection error',
+      );
+    });
+
+    it('should re-throw error if the EVENT_SOCIAL_DELETED feedback insertion fails', async () => {
+      const item = EventDeletedFactory.buildBatchEventItem();
+      const error = new Error('event_queue insert failed');
+      jest.spyOn(typeormRepository, 'save').mockRejectedValueOnce(error);
+
+      await expect(postProcessor['processEvents']([item])).rejects.toThrow(
+        'event_queue insert failed',
+      );
+      expect(logger.error).toHaveBeenCalledWith(
+        'Error batch inserting EVENT_SOCIAL_DELETED into event_queue',
+        error,
       );
     });
   });
