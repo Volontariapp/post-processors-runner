@@ -5,7 +5,7 @@ import {
   SocialEventMessagingType,
 } from '@volontariapp/messaging';
 import { Injectable } from '@nestjs/common';
-import { ParticipationService } from '@volontariapp/domain-social';
+import { EventId, ParticipationService } from '@volontariapp/domain-social';
 import type {
   BatchEventItem,
   PostProcessorOptions,
@@ -21,6 +21,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Streams } from '@volontariapp/shared';
 import { EventQueueWriter, EventQueueRepository } from '@volontariapp/outbox';
+import { findDeleted } from '../tombstone.js';
 
 databaseMapper.registerBidirectional(EventQueueModel, EventQueueEntity);
 
@@ -29,8 +30,10 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
   protected async processEvents(
     events: BatchEventItem<EventEventMessagingType.EVENT_CREATED>[],
   ): Promise<void> {
-    const queueEntities: EventQueueEntity<SocialEventMessagingType.EVENT_SOCIAL_CREATED>[] =
-      [];
+    const feedbacks: {
+      eventId: string;
+      entity: EventQueueEntity<SocialEventMessagingType.EVENT_SOCIAL_CREATED>;
+    }[] = [];
     const neo4jBatch: { eventId: string; organizerId: string }[] = [];
 
     events.forEach(({ event, messageId }) => {
@@ -75,9 +78,10 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
           },
         );
 
-      queueEntities.push(queueEntity);
+      feedbacks.push({ eventId: payload.eventId, entity: queueEntity });
     });
 
+    let deleted = new Set<string>();
     if (neo4jBatch.length > 0) {
       try {
         await this.participationService.createEventsBatch(neo4jBatch);
@@ -87,7 +91,28 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
           error,
         );
       }
+
+      // Checked after the creation, see tombstone.ts (G4): an event.deleted processed in between
+      // has either set its marker already or removes the node after it was created here.
+      deleted = await findDeleted(
+        this.redis,
+        'event',
+        neo4jBatch.map(({ eventId }) => eventId),
+      );
+      if (deleted.size > 0) {
+        await this.participationService.deleteEventsBatch(
+          [...deleted].map((id) => new EventId(id)),
+        );
+        this.logger.warn(
+          `EVENT_CREATED processed after EVENT_DELETED: ${String(deleted.size)} social event nodes removed again`,
+          { eventIds: [...deleted] },
+        );
+      }
     }
+
+    const queueEntities = feedbacks
+      .filter(({ eventId }) => !deleted.has(eventId))
+      .map(({ entity }) => entity);
 
     if (queueEntities.length > 0) {
       try {

@@ -7,7 +7,7 @@ import {
   jest,
 } from '@jest/globals';
 import { UserDeletedPostProcessor } from '../../post-processors/users/user-deleted.post-processor.js';
-import { USER_TOMBSTONE_TTL_SECONDS } from '../../post-processors/users/user-tombstone.js';
+import { TOMBSTONE_TTL_SECONDS } from '../../post-processors/tombstone.js';
 import {
   UserEventMessagingType,
   SocialEventMessagingType,
@@ -83,7 +83,7 @@ describe('UserDeletedPostProcessor', () => {
         `post-processor-social:user-tombstone:${userId}`,
         '1',
         'EX',
-        USER_TOMBSTONE_TTL_SECONDS,
+        TOMBSTONE_TTL_SECONDS,
       );
       expect(setSpy.mock.invocationCallOrder[0]).toBeLessThan(
         purgeSpy.mock.invocationCallOrder[0],

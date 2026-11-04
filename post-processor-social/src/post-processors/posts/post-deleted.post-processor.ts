@@ -24,6 +24,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Streams } from '@volontariapp/shared';
 import { EventQueueWriter, EventQueueRepository } from '@volontariapp/outbox';
+import { markDeleted } from '../tombstone.js';
 
 databaseMapper.registerBidirectional(EventQueueModel, EventQueueEntity);
 
@@ -57,6 +58,12 @@ export class PostDeletedPostProcessor extends BatchPostProcessor<PostEventMessag
     try {
       this.logger.info(
         `Batch processing ${String(postIds.length)} POST_DELETED events...`,
+      );
+      // Marker first, see tombstone.ts (G4): post.created may still be processed after this.
+      await markDeleted(
+        this.redis,
+        'post',
+        postIds.map((postId) => postId.value),
       );
       await this.publicationService.deletePosts(postIds);
       this.logger.info('Successfully batch processed POST_DELETED events');
