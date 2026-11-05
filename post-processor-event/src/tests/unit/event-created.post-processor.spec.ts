@@ -13,6 +13,8 @@ import {
   PostgresEventRepository,
 } from '@volontariapp/domain-event';
 import { EventQueueRepository } from '@volontariapp/outbox';
+import { EventEventMessagingType } from '@volontariapp/messaging';
+import { Streams } from '@volontariapp/shared';
 import { EventCreatedPostProcessor } from '../../post-processors/event-created.post-processor.js';
 import { EventCreatedFactory } from '../factories/event-created.factory.js';
 import {
@@ -60,6 +62,38 @@ describe('EventCreatedPostProcessor', () => {
     expect(geocode).toHaveBeenCalledWith('Lyon, France');
     expect(updateEvent).toHaveBeenCalledTimes(1);
     expect(writeFollowUp).toHaveBeenCalledTimes(1);
+  });
+
+  it('writes only event.geocoded on success', async () => {
+    jest
+      .spyOn(GeocodingService.prototype, 'geocode')
+      .mockResolvedValue({ lat: 45.76, lng: 4.83 });
+    const item = EventCreatedFactory.buildBatchEventItem();
+
+    await build(true)['processEvents']([item]);
+
+    expect(writeFollowUp).toHaveBeenCalledTimes(1);
+    expect(writeFollowUp.mock.calls[0]?.[0]).toMatchObject({
+      type: EventEventMessagingType.EVENT_GEOCODED,
+    });
+  });
+
+  it('writes event.geocoding_failed and does not update the location when geocoding returns nothing', async () => {
+    jest.spyOn(GeocodingService.prototype, 'geocode').mockResolvedValue(null);
+    const item = EventCreatedFactory.buildBatchEventItem();
+
+    await build(true)['processEvents']([item]);
+
+    expect(updateEvent).not.toHaveBeenCalled();
+    expect(writeFollowUp).toHaveBeenCalledTimes(1);
+    expect(writeFollowUp.mock.calls[0]?.[0]).toMatchObject({
+      type: EventEventMessagingType.EVENT_GEOCODING_FAILED,
+      emitter: 'ms-event',
+      emitterId: item.event.emitterId,
+      payload: { after: { eventId: item.event.payload.after.eventId } },
+      targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
+      correlationId: item.event.correlationId,
+    });
   });
 
   it('acknowledges without geocoding nor writing when geocoding is disabled', async () => {
