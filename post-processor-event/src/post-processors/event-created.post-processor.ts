@@ -23,6 +23,14 @@ import { Streams } from '@volontariapp/shared';
 
 databaseMapper.registerBidirectional(EventQueueModel, EventQueueEntity);
 
+type FeedbackType =
+  | EventEventMessagingType.EVENT_GEOCODED
+  | EventEventMessagingType.EVENT_GEOCODING_FAILED;
+
+type FeedbackPayload<T extends FeedbackType> = Parameters<
+  typeof EventQueueEntity.createFollowUp<T>
+>[1]['payload'];
+
 export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMessagingType.EVENT_CREATED> {
   private readonly geocodingService: GeocodingService;
   private readonly eventRepository: PostgresEventRepository;
@@ -54,6 +62,23 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
     eventType: EventEventMessagingType | string,
   ): boolean {
     return eventType === EventEventMessagingType.EVENT_CREATED.toString();
+  }
+
+  private async writeFeedback<T extends FeedbackType>(
+    event: BatchEventItem<EventEventMessagingType.EVENT_CREATED>['event'],
+    type: T,
+    payload: FeedbackPayload<T>,
+  ): Promise<void> {
+    const followUp = EventQueueEntity.createFollowUp<T>(event, {
+      type,
+      emitter: 'ms-event',
+      emitterId: event.emitterId,
+      payload,
+      targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
+    });
+    await new EventQueueRepository<T>(
+      this.db.getRepository(EventQueueModel),
+    ).create(followUp);
   }
 
   protected async processEvents(
@@ -91,27 +116,25 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
             location: new EventLocation(geoResult.lat, geoResult.lng),
           });
 
-          // Write EVENT_GEOCODED to outbox database (event_queue)
-          const geocodedEvent =
-            EventQueueEntity.createFollowUp<EventEventMessagingType.EVENT_GEOCODED>(
-              event,
-              {
-                type: EventEventMessagingType.EVENT_GEOCODED,
-                emitter: 'ms-event',
-                emitterId: event.emitterId,
-                payload: { eventId },
-                targetServices: [Streams.WS_EVENT_CREATED_FEEDBACK],
-              },
-            );
-          await new EventQueueRepository<EventEventMessagingType.EVENT_GEOCODED>(
-            this.db.getRepository(EventQueueModel),
-          ).create(geocodedEvent);
+          await this.writeFeedback(
+            event,
+            EventEventMessagingType.EVENT_GEOCODED,
+            { eventId },
+          );
           this.logger.log(
             `Feedback event EVENT_GEOCODED registered in outbox for event ${String(eventId)}`,
           );
         } else {
           this.logger.warn(
             `Geocoding failed to return results for event ${String(eventId)}`,
+          );
+          await this.writeFeedback(
+            event,
+            EventEventMessagingType.EVENT_GEOCODING_FAILED,
+            { eventId },
+          );
+          this.logger.log(
+            `Feedback event EVENT_GEOCODING_FAILED registered in outbox for event ${String(eventId)}`,
           );
         }
       } catch (error) {
