@@ -1,6 +1,24 @@
-import { IsDefined, IsNumber, IsString, ValidateNested } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsBoolean,
+  IsDefined,
+  IsNumber,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+import { Transform, Type } from 'class-transformer';
 import { BaseConfig, PostgresConfig, RedisConfig } from '@volontariapp/config';
+import { booleanFlag } from './helpers/boolean-flag.helpers.js';
+
+export class GeocodingConfig {
+  /**
+   * Geocodage de event.created (GEOCODING_ENABLED), active par defaut. Coupe dans la stack E2E :
+   * en NODE_ENV=test le geocodeur renvoie des coordonnees fixes qui ecraseraient celles des events.
+   */
+  @IsDefined()
+  @Transform(booleanFlag('enabled'))
+  @IsBoolean()
+  enabled!: boolean;
+}
 
 export class PostProcessorConfig {
   @IsDefined()
@@ -47,4 +65,9 @@ export class CustomConfig extends BaseConfig {
   @ValidateNested()
   @Type(() => PostProcessorConfig)
   postProcessor!: PostProcessorConfig;
+
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => GeocodingConfig)
+  geocoding!: GeocodingConfig;
 }

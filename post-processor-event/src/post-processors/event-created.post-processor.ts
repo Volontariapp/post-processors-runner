@@ -31,6 +31,7 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
     private readonly db: DataSource,
     redisDriver: Redis,
     options: PostProcessorOptions,
+    private readonly geocodingEnabled: boolean,
   ) {
     super(redisDriver, options);
 
@@ -58,6 +59,13 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
   protected async processEvents(
     events: BatchEventItem<EventEventMessagingType.EVENT_CREATED>[],
   ): Promise<void> {
+    if (!this.geocodingEnabled) {
+      this.logger.info(
+        `Geocoding disabled by configuration (GEOCODING_ENABLED=false), ${String(events.length)} event.created acknowledged without geocoding`,
+      );
+      return;
+    }
+
     for (const { event, messageId } of events) {
       const { eventId, localisationName } = event.payload.after;
 

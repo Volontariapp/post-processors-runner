@@ -29,6 +29,7 @@ import {
   POST_PROCESSORS_STORAGE_FILE_REJECTED_OPTIONS,
   POST_PROCESSORS_STORAGE_ATTACHMENT_REJECTED_OPTIONS,
 } from './options/index.js';
+import { CustomConfig } from '../config/custom-config.js';
 import { EventCreatedPostProcessor } from './event-created.post-processor.js';
 import { EventCreationFailedPostProcessor } from './event-creation-failed.post-processor.js';
 import { EventCreationSuccessfullPostProcessor } from './event-creation-successfull.post-processor.js';
@@ -100,6 +101,7 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        customConfig: CustomConfig,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
@@ -107,6 +109,7 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
           dbProvider.getDriver(),
           redisProvider.getDriver(),
           options,
+          customConfig.geocoding.enabled,
         );
         void postProcessor.start();
         return postProcessor;
@@ -115,6 +118,7 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_EVENT_CREATED_OPTIONS,
+        CustomConfig,
       ],
     },
     {
