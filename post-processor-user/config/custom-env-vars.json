@@ -23,7 +23,11 @@
     "retryDelayMs": "POST_PROCESSOR_RETRY_DELAY_MS"
   },
   "microServices": {
-    "msSocialUrl": "MS_SOCIAL_URL"
+    "msSocialUrl": "MS_SOCIAL_URL",
+    "msPostUrl": "MS_POST_URL"
+  },
+  "badges": {
+    "pointsEnabled": "BADGE_POINTS_ENABLED"
   },
   "auth": {
     "internalPrivateKeyPath": "AUTH_INTERNAL_PRIVATE_KEY_PATH"

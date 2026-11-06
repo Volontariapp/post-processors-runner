@@ -1,11 +1,12 @@
 import {
+  IsBoolean,
   IsDefined,
   IsNumber,
   IsOptional,
   IsString,
   ValidateNested,
 } from 'class-validator';
-import { Type } from 'class-transformer';
+import { Transform, Type } from 'class-transformer';
 import { BaseConfig, PostgresConfig, RedisConfig } from '@volontariapp/config';
 
 export class PostProcessorConfig {
@@ -42,6 +43,20 @@ export class MicroServicesConfig {
   @IsOptional()
   @IsString()
   msSocialUrl: string = 'localhost:3000';
+
+  @IsOptional()
+  @IsString()
+  msPostUrl: string = 'localhost:3000';
+}
+
+export class BadgesConfig {
+  /** Active le crédit de points à l'attribution d'un badge (BADGE_POINTS_ENABLED). Désactivé par défaut. */
+  @IsOptional()
+  @IsBoolean()
+  @Transform(
+    ({ value }: { value: unknown }) => value === true || value === 'true',
+  )
+  pointsEnabled: boolean = false;
 }
 
 export class AuthConfigDetails {
@@ -79,4 +94,9 @@ export class CustomConfig extends BaseConfig {
   @ValidateNested()
   @Type(() => AuthConfigDetails)
   auth: AuthConfigDetails = new AuthConfigDetails();
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => BadgesConfig)
+  badges: BadgesConfig = new BadgesConfig();
 }

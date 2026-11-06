@@ -97,6 +97,7 @@ describe('PostLikedBadgePostProcessor', () => {
           correlationId: 'corr-123',
           traceId: 'trace-456',
         }),
+        'post-123',
       );
     });
 
@@ -118,6 +119,7 @@ describe('PostLikedBadgePostProcessor', () => {
           correlationId: 'corr-like-1',
           traceId: undefined,
         }),
+        'post-123',
       );
     });
 
