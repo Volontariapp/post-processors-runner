@@ -42,6 +42,12 @@ export interface ISocialInteractionClient {
   getAllEventAttendees(eventId: string): Promise<EventAttendeeInfo[]>;
 }
 
+/** Activité d'un utilisateur, utilisée uniquement par le backfill des compteurs de badges. */
+export interface IUserSocialActivityClient {
+  getAllUserLikedPostIds(userId: string): Promise<string[]>;
+  getAllUserWishedEventIds(userId: string): Promise<string[]>;
+}
+
 interface InteractionQueryServiceClientWithMetadata extends InteractionQueryServiceClient {
   adminGetUserLikes(
     request: AdminGetUserLikesQuery,
@@ -66,7 +72,7 @@ interface ParticipationQueryServiceClientWithMetadata extends ParticipationQuery
 
 @Injectable()
 export class SocialInteractionClient
-  implements OnModuleInit, ISocialInteractionClient
+  implements OnModuleInit, ISocialInteractionClient, IUserSocialActivityClient
 {
   private readonly logger = new Logger({
     context: 'SocialInteractionClient',
@@ -126,6 +132,54 @@ export class SocialInteractionClient
     );
 
     return response.pagination?.total ?? 0;
+  }
+
+  async getAllUserLikedPostIds(userId: string): Promise<string[]> {
+    return this.collectPagedIds(async (page, limit) => {
+      const metadata = await this.getInternalMetadata();
+      return firstValueFrom(
+        this.queryService.adminGetUserLikes(
+          { userId, pagination: { page, limit } },
+          metadata,
+        ),
+      );
+    });
+  }
+
+  async getAllUserWishedEventIds(userId: string): Promise<string[]> {
+    return this.collectPagedIds(async (page, limit) => {
+      const metadata = await this.getInternalMetadata();
+      return firstValueFrom(
+        this.participationQueryService.adminGetUserWishEvent(
+          { userId, pagination: { page, limit } },
+          metadata,
+        ),
+      );
+    });
+  }
+
+  private async collectPagedIds(
+    fetchPage: (
+      page: number,
+      limit: number,
+    ) => Promise<{
+      ids: string[];
+      pagination?: { totalPages?: number } | undefined;
+    }>,
+  ): Promise<string[]> {
+    const allIds: string[] = [];
+    const limit = 100;
+    let page = 1;
+    let totalPages = 1;
+
+    do {
+      const response = await fetchPage(page, limit);
+      allIds.push(...response.ids);
+      totalPages = response.pagination?.totalPages ?? 1;
+      page++;
+    } while (page <= totalPages);
+
+    return Array.from(new Set(allIds));
   }
 
   async getAllEventParticipantIds(eventId: string): Promise<string[]> {
