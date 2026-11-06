@@ -340,4 +340,43 @@ describe('SocialInteractionClient', () => {
       expect(attendees).toEqual([]);
     });
   });
+  describe('user activity listing (backfill)', () => {
+    it('should collect every liked post id across pages without duplicates', async () => {
+      mockQueryService.adminGetUserLikes
+        .mockReturnValueOnce(
+          of({
+            ids: ['post-1', 'post-2'],
+            pagination: { page: 1, limit: 100, total: 3, totalPages: 2 },
+          }),
+        )
+        .mockReturnValueOnce(
+          of({
+            ids: ['post-2', 'post-3'],
+            pagination: { page: 2, limit: 100, total: 3, totalPages: 2 },
+          }),
+        );
+
+      const ids = await client.getAllUserLikedPostIds('user-1');
+
+      expect(ids).toEqual(['post-1', 'post-2', 'post-3']);
+      expect(mockQueryService.adminGetUserLikes).toHaveBeenNthCalledWith(
+        2,
+        { userId: 'user-1', pagination: { page: 2, limit: 100 } },
+        expect.anything(),
+      );
+    });
+
+    it('should collect wished event ids and handle a missing pagination block', async () => {
+      mockParticipationQueryService.adminGetUserWishEvent.mockReturnValue(
+        of({ ids: ['event-1'], pagination: undefined }),
+      );
+
+      const ids = await client.getAllUserWishedEventIds('user-1');
+
+      expect(ids).toEqual(['event-1']);
+      expect(
+        mockParticipationQueryService.adminGetUserWishEvent,
+      ).toHaveBeenCalledTimes(1);
+    });
+  });
 });

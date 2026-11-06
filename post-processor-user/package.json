@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
+    "backfill:badge-counters": "node dist/scripts/backfill-badge-counters.js",
     "start:local": "NODE_ENV=local tsx src/index.ts",
     "start:dev": "NODE_ENV=development tsx src/index.ts",
     "start:test": "NODE_ENV=test tsx src/index.ts",
