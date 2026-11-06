@@ -5,7 +5,7 @@ import {
   getGrpcOptions,
 } from '@volontariapp/contracts-nest';
 import { CustomConfig } from '../../config/custom-config.js';
-import { SOCIAL_PACKAGE } from './constants.js';
+import { POST_PACKAGE, SOCIAL_PACKAGE } from './constants.js';
 
 @Global()
 @Module({
@@ -18,6 +18,15 @@ import { SOCIAL_PACKAGE } from './constants.js';
           getGrpcOptions(
             GRPC_MICROSERVICES.SOCIAL,
             customConfig.microServices.msSocialUrl,
+          ),
+      },
+      {
+        name: POST_PACKAGE,
+        inject: [CustomConfig],
+        useFactory: (customConfig: CustomConfig) =>
+          getGrpcOptions(
+            GRPC_MICROSERVICES.POST,
+            customConfig.microServices.msPostUrl,
           ),
       },
     ]),

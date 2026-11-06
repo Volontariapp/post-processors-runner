@@ -104,6 +104,7 @@ describe('EventSocialWishedBadgePostProcessor', () => {
           traceId: 'trace-456',
           traceparent: SOURCE_TRACEPARENT,
         }),
+        'event-123',
       );
     });
 
@@ -128,6 +129,7 @@ describe('EventSocialWishedBadgePostProcessor', () => {
           traceId: undefined,
           traceparent: SOURCE_TRACEPARENT,
         }),
+        'event-123',
       );
     });
 

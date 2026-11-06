@@ -5,6 +5,9 @@ import {
   UserBadgeModel,
   BadgeProgressModel,
   BadgeProgressEventModel,
+  BadgeProgressDedupModel,
+  BadgePointCreditModel,
+  UserModel,
 } from '@volontariapp/domain-user';
 import { EventType } from '@volontariapp/contracts-nest';
 import {
@@ -18,9 +21,16 @@ import {
   type IBadgePayload,
   UserEventMessagingType,
 } from '@volontariapp/messaging';
-import { Streams } from '@volontariapp/shared';
+import {
+  Streams,
+  BADGE_METRICS,
+  BADGE_POINTS_VERSION,
+  getBadgePoints,
+  getBadgeRule,
+} from '@volontariapp/shared';
 import { Logger } from '@volontariapp/logger';
 import type { ISocialInteractionClient } from '../clients/social-interaction.client.js';
+import type { IPostAuthorResolver } from '../clients/post-author.resolver.js';
 
 databaseMapper.registerBidirectional(EventQueueEntity, EventQueueModel);
 
@@ -44,6 +54,13 @@ export const BADGE_PROGRESS_METRICS = {
 
 export type EvaluationContext = EventTraceContext;
 
+export interface BadgeEvaluatorOptions {
+  /** Crédite les points du badge dans `users.total_impact_score` à l'attribution. Désactivé par défaut. */
+  readonly pointsEnabled?: boolean;
+  /** Requis pour les badges de likes : permet d'exclure les auto-likes. */
+  readonly postAuthorResolver?: IPostAuthorResolver;
+}
+
 export class BadgeEvaluator {
   private readonly logger = new Logger({
     context: 'BadgeEvaluator',
@@ -55,6 +72,7 @@ export class BadgeEvaluator {
     private readonly db: DataSource,
     private readonly socialClient?: ISocialInteractionClient,
     private readonly redis?: Redis,
+    private readonly options: BadgeEvaluatorOptions = {},
   ) {}
 
   async evaluateEventHostBadge(
@@ -71,9 +89,14 @@ export class BadgeEvaluator {
     return this.evaluateBadge('COMMUNITY_POST_COUNT_1', userId, context);
   }
 
+  /**
+   * Compte un like distinct `(postId, userId)` (jamais décrémenté) et attribue le badge au seuil.
+   * Les likes sur ses propres posts sont ignorés. Un échec de ms-post lève : le message est rejoué.
+   */
   async evaluateSocialLikeBadge(
     userId: string,
     context: EvaluationContext,
+    postId: string,
   ): Promise<IBadgePayload[]> {
     const badgeSlug = 'SOCIAL_LIKE_COUNT_10';
     const badge = await this.getBadgeBySlug(badgeSlug);
@@ -83,30 +106,43 @@ export class BadgeEvaluator {
       return [];
     }
 
-    const alreadyOwned = await this.isBadgeOwned(userId, badge.id, badgeSlug);
-    if (alreadyOwned) {
+    if (await this.isBadgeOwned(userId, badge.id, badgeSlug)) {
       return [];
     }
 
-    if (!this.socialClient) {
-      throw new Error('SocialClient is not configured in BadgeEvaluator');
+    if (!this.options.postAuthorResolver) {
+      throw new Error('PostAuthorResolver is not configured in BadgeEvaluator');
     }
 
-    const totalLikes = await this.socialClient.getUserLikesCount(userId);
-    this.logger.info(
-      `User ${userId} has ${String(totalLikes)} total likes evaluated for badge ${badgeSlug}`,
+    const postAuthorId =
+      await this.options.postAuthorResolver.getPostAuthorId(postId);
+    if (postAuthorId === undefined) {
+      this.logger.warn(
+        `Post ${postId} not found, like by user ${userId} not counted`,
+      );
+      return [];
+    }
+    if (postAuthorId === userId) {
+      this.logger.info(
+        `User ${userId} liked own post ${postId}, not counted for ${badgeSlug}`,
+      );
+      return [];
+    }
+
+    return this.countAndAward(
+      badge,
+      BADGE_METRICS.SOCIAL_LIKES_GIVEN,
+      userId,
+      postId,
+      context,
     );
-
-    if (totalLikes < 10) {
-      return [];
-    }
-
-    return this.awardBadge(badge, userId, context);
   }
 
+  /** Compte un souhait distinct `(eventId, userId)` (jamais décrémenté) et attribue le badge au seuil. */
   async evaluateEventWishlistBadge(
     userId: string,
     context: EvaluationContext,
+    eventId: string,
   ): Promise<IBadgePayload[]> {
     const badgeSlug = 'EVENT_WISHLIST_COUNT_10';
     const badge = await this.getBadgeBySlug(badgeSlug);
@@ -116,25 +152,17 @@ export class BadgeEvaluator {
       return [];
     }
 
-    const alreadyOwned = await this.isBadgeOwned(userId, badge.id, badgeSlug);
-    if (alreadyOwned) {
+    if (await this.isBadgeOwned(userId, badge.id, badgeSlug)) {
       return [];
     }
 
-    if (!this.socialClient) {
-      throw new Error('SocialClient is not configured in BadgeEvaluator');
-    }
-
-    const totalWishes = await this.socialClient.getUserWishEventsCount(userId);
-    this.logger.info(
-      `User ${userId} has ${String(totalWishes)} total wishes evaluated for badge ${badgeSlug}`,
+    return this.countAndAward(
+      badge,
+      BADGE_METRICS.SOCIAL_WISHES,
+      userId,
+      eventId,
+      context,
     );
-
-    if (totalWishes < 10) {
-      return [];
-    }
-
-    return this.awardBadge(badge, userId, context);
   }
 
   async evaluateEventFinished(
@@ -281,22 +309,18 @@ export class BadgeEvaluator {
         `User ${userId} progress after event ${eventId}: total=${String(totalCount)}, social=${String(socialCount)}, eco=${String(ecoCount)}`,
       );
 
-      // Step E: Determine eligible badge slugs
-      const eligibleSlugs: string[] = [];
-      if (totalCount >= 1) eligibleSlugs.push('EVENT_PARTICIPATION_TIER_1');
-      if (totalCount >= 5) eligibleSlugs.push('EVENT_PARTICIPATION_TIER_2');
-      if (totalCount >= 10) eligibleSlugs.push('EVENT_PARTICIPATION_TIER_3');
-      if (totalCount >= 20) eligibleSlugs.push('EVENT_PARTICIPATION_TIER_4');
-
-      if (socialCount >= 1) eligibleSlugs.push('EVENT_SOCIAL_TIER_1');
-      if (socialCount >= 5) eligibleSlugs.push('EVENT_SOCIAL_TIER_2');
-
-      if (ecoCount >= 1) eligibleSlugs.push('EVENT_ECOLOGY_TIER_1');
-      if (ecoCount >= 5) eligibleSlugs.push('EVENT_ECOLOGY_TIER_2');
-
-      if (socialCount >= 5 && ecoCount >= 5) {
-        eligibleSlugs.push('EVENT_HYBRID_ECO_SOCIAL_TIER_1');
-      }
+      // Step E: Determine eligible badge slugs from the shared catalogue
+      const counters: Record<string, number> = {
+        [BADGE_METRICS.EVENTS_FINISHED_TOTAL]: totalCount,
+        [BADGE_METRICS.EVENTS_FINISHED_SOCIAL]: socialCount,
+        [BADGE_METRICS.EVENTS_FINISHED_ECOLOGY]: ecoCount,
+      };
+      const eligibleSlugs = PARTICIPATION_BADGE_SLUGS.filter(
+        (slug) =>
+          getBadgeRule(slug)?.requirements.every(
+            (req) => (counters[req.metric] ?? 0) >= req.target,
+          ) ?? false,
+      );
 
       // Step F: Award newly eligible badges
       for (const slug of eligibleSlugs) {
@@ -311,30 +335,15 @@ export class BadgeEvaluator {
           continue;
         }
 
-        const insertResult = await manager
-          .createQueryBuilder()
-          .insert()
-          .into(UserBadgeModel)
-          .values({
-            userId,
-            badgeId: badge.id,
-          })
-          .orIgnore()
-          .returning('badge_id')
-          .execute();
-
-        const rawResults = insertResult.raw as Array<{ badge_id: string }>;
-        const isNewlyAwarded =
-          Array.isArray(rawResults) && rawResults.length > 0;
+        const isNewlyAwarded = await this.insertUserBadge(
+          manager,
+          userId,
+          badge,
+        );
 
         if (isNewlyAwarded) {
-          awardedBadges.push({
-            id: badge.id,
-            name: badge.name,
-            slug: badge.slug,
-            description: badge.description,
-            iconPath: badge.iconPath,
-          });
+          const points = await this.creditBadgePoints(manager, userId, badge);
+          awardedBadges.push(this.toBadgePayload(badge, points));
         }
       }
 
@@ -361,23 +370,17 @@ export class BadgeEvaluator {
           );
         await eventQueueRepo.create(eventEntity);
 
-        if (this.redis) {
-          for (const b of awardedBadges) {
-            try {
-              await this.redis.sadd(`badges:owned:${userId}`, b.slug);
-            } catch (cacheErr: unknown) {
-              this.logger.warn(
-                `Failed to populate Redis cache for user ${userId}: ${cacheErr instanceof Error ? cacheErr.message : String(cacheErr)}`,
-              );
-            }
-          }
-        }
-
         this.logger.info(
           `Awarded ${String(awardedBadges.length)} participation badges to user ${userId} and created outbox event: ${awardedBadges.map((b) => b.slug).join(', ')}`,
         );
       }
     });
+
+    // Cache written after the commit: a rolled-back award must not look owned.
+    await this.cacheOwnedBadges(
+      userId,
+      awardedBadges.map((b) => b.slug),
+    );
 
     return awardedBadges;
   }
@@ -514,77 +517,228 @@ export class BadgeEvaluator {
     userId: string,
     context: EvaluationContext,
   ): Promise<IBadgePayload[]> {
-    const awardedBadges: IBadgePayload[] = [];
+    const awarded = await this.db.transaction((manager) =>
+      this.awardInTransaction(manager, badge, userId, context),
+    );
 
-    await this.db.transaction(async (manager) => {
-      const insertResult = await manager
-        .createQueryBuilder()
-        .insert()
-        .into(UserBadgeModel)
-        .values({
-          userId,
-          badgeId: badge.id,
-        })
-        .orIgnore()
-        .returning('badge_id')
-        .execute();
+    if (!awarded) {
+      return [];
+    }
 
-      const rawResults = insertResult.raw as Array<{ badge_id: string }>;
-      const isNewlyAwarded = Array.isArray(rawResults) && rawResults.length > 0;
+    await this.cacheOwnedBadges(userId, [awarded.slug]);
+    return [awarded];
+  }
 
-      if (!isNewlyAwarded) {
-        this.logger.info(
-          `Conflict detected for user ${userId} and badge ${badge.slug}, already awarded concurrently`,
-        );
-        return;
-      }
-
-      const badgePayload: IBadgePayload = {
-        id: badge.id,
-        name: badge.name,
-        slug: badge.slug,
-        description: badge.description,
-        iconPath: badge.iconPath,
-      };
-
-      awardedBadges.push(badgePayload);
-
-      const eventEntity =
-        EventQueueEntity.createFollowUp<UserEventMessagingType.USER_BADGE_AWARDED>(
-          context,
-          {
-            type: UserEventMessagingType.USER_BADGE_AWARDED,
-            emitter: 'post-processor-user',
-            emitterId: userId,
-            payload: {
-              userId,
-              badges: [badgePayload],
-            },
-            targetServices: [Streams.USER_BADGE_AWARDED],
-          },
-        );
-
-      const eventQueueRepo =
-        new EventQueueRepository<UserEventMessagingType.USER_BADGE_AWARDED>(
-          manager.getRepository(EventQueueModel),
-        );
-      await eventQueueRepo.create(eventEntity);
-
-      if (this.redis) {
-        try {
-          await this.redis.sadd(`badges:owned:${userId}`, badge.slug);
-        } catch (cacheErr: unknown) {
-          this.logger.warn(
-            `Failed to populate Redis cache for user ${userId}: ${cacheErr instanceof Error ? cacheErr.message : String(cacheErr)}`,
-          );
-        }
-      }
-
-      this.logger.info(
-        `Badge ${badge.slug} successfully awarded to user ${userId} and outbox event created`,
+  /**
+   * Incrémente le compteur `metric` si `refId` n'a jamais été compté pour cet utilisateur, puis attribue
+   * le badge quand le seuil du catalogue est atteint. Compteur et attribution partagent la transaction.
+   */
+  private async countAndAward(
+    badge: BadgeModel,
+    metric: string,
+    userId: string,
+    refId: string,
+    context: EvaluationContext,
+  ): Promise<IBadgePayload[]> {
+    const target = getBadgeRule(badge.slug)?.requirements.find(
+      (req) => req.metric === metric,
+    )?.target;
+    if (target === undefined) {
+      throw new Error(
+        `No ${metric} requirement in catalogue for ${badge.slug}`,
       );
+    }
+
+    const awarded = await this.db.transaction(async (manager) => {
+      const value = await this.recordProgress(manager, userId, metric, refId);
+      if (value === undefined) {
+        this.logger.info(
+          `${metric} already counted for user ${userId} and ${refId}, skipping`,
+        );
+        return undefined;
+      }
+      this.logger.info(
+        `User ${userId} ${metric}=${String(value)}/${String(target)} for ${badge.slug}`,
+      );
+      if (value < target) {
+        return undefined;
+      }
+      return this.awardInTransaction(manager, badge, userId, context);
     });
 
-    return awardedBadges;
+    if (!awarded) {
+      return [];
+    }
+
+    await this.cacheOwnedBadges(userId, [awarded.slug]);
+    return [awarded];
+  }
+
+  /** Renvoie la nouvelle valeur du compteur, ou `undefined` si `(userId, metric, refId)` était déjà compté. */
+  private async recordProgress(
+    manager: EntityManager,
+    userId: string,
+    metric: string,
+    refId: string,
+  ): Promise<number | undefined> {
+    const insertResult = await manager
+      .createQueryBuilder()
+      .insert()
+      .into(BadgeProgressDedupModel)
+      .values({ userId, metric, refId })
+      .orIgnore()
+      .returning('ref_id')
+      .execute();
+
+    const rawResults = insertResult.raw as Array<{ ref_id: string }>;
+    if (!Array.isArray(rawResults) || rawResults.length === 0) {
+      return undefined;
+    }
+
+    return this.incrementCounter(manager, userId, metric);
+  }
+
+  /** Attribue un badge, crédite ses points et écrit l'outbox, dans la transaction de l'appelant. */
+  private async awardInTransaction(
+    manager: EntityManager,
+    badge: BadgeModel,
+    userId: string,
+    context: EvaluationContext,
+  ): Promise<IBadgePayload | undefined> {
+    const isNewlyAwarded = await this.insertUserBadge(manager, userId, badge);
+
+    if (!isNewlyAwarded) {
+      this.logger.info(
+        `Conflict detected for user ${userId} and badge ${badge.slug}, already awarded concurrently`,
+      );
+      return undefined;
+    }
+
+    const points = await this.creditBadgePoints(manager, userId, badge);
+    const badgePayload = this.toBadgePayload(badge, points);
+
+    const eventEntity =
+      EventQueueEntity.createFollowUp<UserEventMessagingType.USER_BADGE_AWARDED>(
+        context,
+        {
+          type: UserEventMessagingType.USER_BADGE_AWARDED,
+          emitter: 'post-processor-user',
+          emitterId: userId,
+          payload: {
+            userId,
+            badges: [badgePayload],
+          },
+          targetServices: [Streams.USER_BADGE_AWARDED],
+        },
+      );
+
+    const eventQueueRepo =
+      new EventQueueRepository<UserEventMessagingType.USER_BADGE_AWARDED>(
+        manager.getRepository(EventQueueModel),
+      );
+    await eventQueueRepo.create(eventEntity);
+
+    this.logger.info(
+      `Badge ${badge.slug} successfully awarded to user ${userId} and outbox event created`,
+    );
+
+    return badgePayload;
+  }
+
+  private async insertUserBadge(
+    manager: EntityManager,
+    userId: string,
+    badge: BadgeModel,
+  ): Promise<boolean> {
+    const insertResult = await manager
+      .createQueryBuilder()
+      .insert()
+      .into(UserBadgeModel)
+      .values({
+        userId,
+        badgeId: badge.id,
+      })
+      .orIgnore()
+      .returning('badge_id')
+      .execute();
+
+    const rawResults = insertResult.raw as Array<{ badge_id: string }>;
+    return Array.isArray(rawResults) && rawResults.length > 0;
+  }
+
+  /**
+   * Crédite les points d'un badge fraîchement attribué. Idempotent par `(userId, badgeId)` et lié
+   * à la transaction d'attribution. Renvoie les points crédités, `undefined` si désactivé ou déjà crédité.
+   */
+  private async creditBadgePoints(
+    manager: EntityManager,
+    userId: string,
+    badge: BadgeModel,
+  ): Promise<number | undefined> {
+    if (!this.options.pointsEnabled) {
+      return undefined;
+    }
+
+    const points = badge.points ?? getBadgePoints(badge.slug);
+    if (points <= 0) {
+      return undefined;
+    }
+
+    const insertResult = await manager
+      .createQueryBuilder()
+      .insert()
+      .into(BadgePointCreditModel)
+      .values({
+        userId,
+        badgeId: badge.id,
+        points,
+        formulaVersion: BADGE_POINTS_VERSION,
+      })
+      .orIgnore()
+      .returning('badge_id')
+      .execute();
+
+    const rawResults = insertResult.raw as Array<{ badge_id: string }>;
+    if (!Array.isArray(rawResults) || rawResults.length === 0) {
+      return undefined;
+    }
+
+    await manager.increment(
+      UserModel,
+      { id: userId },
+      'totalImpactScore',
+      points,
+    );
+    return points;
+  }
+
+  private toBadgePayload(badge: BadgeModel, points?: number): IBadgePayload {
+    return {
+      id: badge.id,
+      name: badge.name,
+      slug: badge.slug,
+      description: badge.description,
+      iconPath: badge.iconPath,
+      ...(points !== undefined ? { points } : {}),
+    };
+  }
+
+  private async cacheOwnedBadges(
+    userId: string,
+    slugs: readonly string[],
+  ): Promise<void> {
+    if (!this.redis || slugs.length === 0) {
+      return;
+    }
+
+    for (const slug of slugs) {
+      try {
+        await this.redis.sadd(`badges:owned:${userId}`, slug);
+      } catch (cacheErr: unknown) {
+        this.logger.warn(
+          `Failed to populate Redis cache for user ${userId}: ${cacheErr instanceof Error ? cacheErr.message : String(cacheErr)}`,
+        );
+      }
+    }
   }
 }

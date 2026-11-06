@@ -55,6 +55,7 @@ export class EventSocialWishedBadgePostProcessor extends BatchPostProcessor<Soci
         const awarded = await this.badgeEvaluator.evaluateEventWishlistBadge(
           userId,
           event,
+          eventId,
         );
 
         if (awarded.length > 0) {

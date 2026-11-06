@@ -13,6 +13,8 @@ export function createMockUserRepository(): IUserRepository {
     findByEmail: jest.fn<IUserRepository['findByEmail']>(),
     findByRna: jest.fn<IUserRepository['findByRna']>(),
     findAll: jest.fn<IUserRepository['findAll']>(),
+    findPage: jest.fn<IUserRepository['findPage']>(),
+    findByIds: jest.fn<IUserRepository['findByIds']>(),
     create: jest.fn<IUserRepository['create']>(),
     update: jest.fn<IUserRepository['update']>(),
     updateAvatar: jest.fn<IUserRepository['updateAvatar']>(),

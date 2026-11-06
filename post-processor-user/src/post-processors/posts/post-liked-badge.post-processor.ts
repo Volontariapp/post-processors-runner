@@ -55,6 +55,7 @@ export class PostLikedBadgePostProcessor extends BatchPostProcessor<PostEventMes
         const awarded = await this.badgeEvaluator.evaluateSocialLikeBadge(
           userId,
           event,
+          postId,
         );
 
         if (awarded.length > 0) {

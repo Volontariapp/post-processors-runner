@@ -1,6 +1,6 @@
 import { Inject, Injectable, type OnModuleInit } from '@nestjs/common';
 import type { ClientGrpc } from '@nestjs/microservices';
-import { Metadata } from '@grpc/grpc-js';
+import type { Metadata } from '@grpc/grpc-js';
 import { firstValueFrom, type Observable } from 'rxjs';
 import {
   INTERACTION_QUERY_SERVICE_NAME,
@@ -17,10 +17,10 @@ import {
   type GetEventAttendeesResponse,
   GrpcDateMapper,
 } from '@volontariapp/contracts-nest';
-import { JwtService, INTERNAL_TOKEN_METADATA_KEY } from '@volontariapp/auth';
-import { UserRoles } from '@volontariapp/shared';
+import { JwtService } from '@volontariapp/auth';
 import { Logger } from '@volontariapp/logger';
 import { SOCIAL_PACKAGE } from '../../infrastructure/grpc/constants.js';
+import { InternalMetadataProvider } from './internal-metadata.provider.js';
 
 /**
  * Sentinel used when an attendee has no registration date: the latest representable date,
@@ -74,12 +74,14 @@ export class SocialInteractionClient
   });
   private queryService!: InteractionQueryServiceClientWithMetadata;
   private participationQueryService!: ParticipationQueryServiceClientWithMetadata;
-  private cachedToken?: { token: string; expiresAt: number };
+  private readonly metadataProvider: InternalMetadataProvider;
 
   constructor(
     @Inject(SOCIAL_PACKAGE) private readonly client: ClientGrpc,
-    private readonly jwtService: JwtService,
-  ) {}
+    jwtService: JwtService,
+  ) {
+    this.metadataProvider = new InternalMetadataProvider(jwtService);
+  }
 
   onModuleInit(): void {
     this.queryService = this.client.getService<InteractionQueryServiceClient>(
@@ -92,19 +94,8 @@ export class SocialInteractionClient
     this.logger.log('SocialInteractionClient initialized');
   }
 
-  private async getInternalMetadata(): Promise<Metadata> {
-    const now = Date.now();
-    if (!this.cachedToken || this.cachedToken.expiresAt <= now) {
-      const token = await this.jwtService.signInternal({
-        id: 'pp-user',
-        role: UserRoles.ADMIN,
-      });
-      // Cache token for 4 minutes
-      this.cachedToken = { token, expiresAt: now + 4 * 60 * 1000 };
-    }
-    const metadata = new Metadata();
-    metadata.set(INTERNAL_TOKEN_METADATA_KEY, this.cachedToken.token);
-    return metadata;
+  private getInternalMetadata(): Promise<Metadata> {
+    return this.metadataProvider.getMetadata();
   }
 
   async getUserLikesCount(userId: string): Promise<number> {

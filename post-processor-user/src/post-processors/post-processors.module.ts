@@ -32,6 +32,11 @@ import {
 import { BadgeEvaluator } from '../core/services/badge-evaluator.service.js';
 import { ImpactScoreCrediter } from '../core/services/impact-score-crediter.service.js';
 import { SocialInteractionClient } from '../core/clients/social-interaction.client.js';
+import {
+  CachedPostAuthorResolver,
+  PostQueryClient,
+} from '../core/clients/post-author.resolver.js';
+import { CustomConfig } from '../config/custom-config.js';
 import { EventCreationSuccessfullBadgePostProcessor } from './events/event-creation-successfull-badge.post-processor.js';
 import { EventSocialWishedBadgePostProcessor } from './events/event-social-wished-badge.post-processor.js';
 import { EventFinishedBadgePostProcessor } from './events/event-finished-badge.post-processor.js';
@@ -54,6 +59,7 @@ import { UserService } from '@volontariapp/domain-user';
     eventFinishedBadgeOptionsProvider,
     eventFinishedImpactScoreOptionsProvider,
     SocialInteractionClient,
+    PostQueryClient,
     {
       provide: ImpactScoreCrediter,
       useFactory: async (
@@ -71,19 +77,26 @@ import { UserService } from '@volontariapp/domain-user';
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         socialClient: SocialInteractionClient,
+        postQueryClient: PostQueryClient,
+        config: CustomConfig,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        return new BadgeEvaluator(
-          dbProvider.getDriver(),
-          socialClient,
-          redisProvider.getDriver(),
-        );
+        const redis = redisProvider.getDriver();
+        return new BadgeEvaluator(dbProvider.getDriver(), socialClient, redis, {
+          pointsEnabled: config.badges.pointsEnabled,
+          postAuthorResolver: new CachedPostAuthorResolver(
+            postQueryClient,
+            redis,
+          ),
+        });
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         SocialInteractionClient,
+        PostQueryClient,
+        CustomConfig,
       ],
     },
     {

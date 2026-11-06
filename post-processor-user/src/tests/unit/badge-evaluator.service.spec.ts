@@ -9,6 +9,8 @@ import {
   createParticipationBadgeModel,
 } from '../factories/badge.factory.js';
 import { createMockSocialInteractionClient } from '../mocks/social-interaction-client.mock.js';
+import { createMockPostAuthorResolver } from '../mocks/post-author-resolver.mock.js';
+import { UserModel } from '@volontariapp/domain-user';
 import { UserEventMessagingType } from '@volontariapp/messaging';
 import { Streams } from '@volontariapp/shared';
 import { EventType } from '@volontariapp/contracts-nest';
@@ -287,319 +289,400 @@ describe('BadgeEvaluator', () => {
     });
   });
 
-  describe('evaluateSocialLikeBadge', () => {
-    let mockSocialClient: ReturnType<typeof createMockSocialInteractionClient>;
+  describe('counter based badges (likes and wishlist)', () => {
     let mockRedis: jest.Mocked<Redis>;
+    let postAuthorResolver: ReturnType<typeof createMockPostAuthorResolver>;
+
+    const buildEvaluator = (pointsEnabled = false): BadgeEvaluator => {
+      const instance = new BadgeEvaluator(
+        mockEnv.dataSource,
+        createMockSocialInteractionClient(),
+        mockRedis,
+        { pointsEnabled, postAuthorResolver },
+      );
+      Object.defineProperty(instance, 'logger', {
+        value: {
+          log: jest.fn(),
+          info: jest.fn(),
+          warn: jest.fn(),
+          error: jest.fn(),
+          debug: jest.fn(),
+        },
+      });
+      return instance;
+    };
+
+    /** Ordre des insertions : dédup, user_badges, puis (si points) badge_point_credits. */
+    const mockInserts = (...results: Array<'new' | 'conflict'>): void => {
+      for (const result of results) {
+        mockEnv.queryBuilder.execute.mockResolvedValueOnce({
+          raw: result === 'new' ? [{ ref_id: 'ref', badge_id: 'badge' }] : [],
+        });
+      }
+    };
+
+    const mockCounterAt = (value: number): void => {
+      mockEnv.repositories.badgeProgressRepo.findOneBy.mockResolvedValue({
+        userId: 'user-1',
+        metric: 'M',
+        value: value - 1,
+      });
+    };
 
     beforeEach(() => {
-      mockSocialClient = createMockSocialInteractionClient();
       mockRedis = createMock<Redis>();
       mockRedis.sismember.mockResolvedValue(0);
       mockRedis.sadd.mockResolvedValue(1);
-      evaluator = new BadgeEvaluator(
-        mockEnv.dataSource,
-        mockSocialClient,
-        mockRedis,
-      );
-
-      const mockLogger = {
-        log: jest.fn(),
-        info: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
-        debug: jest.fn(),
-      };
-      Object.defineProperty(evaluator, 'logger', { value: mockLogger });
-    });
-
-    it('should return empty array if badge SOCIAL_LIKE_COUNT_10 not found in DB', async () => {
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(null);
-
-      const result = await evaluator.evaluateSocialLikeBadge(
-        'user-1',
-        TRACE_CONTEXT,
-      );
-
-      expect(result).toEqual([]);
-      expect(mockEnv.repositories.badgeRepo.findOneBy).toHaveBeenCalledWith({
-        slug: 'SOCIAL_LIKE_COUNT_10',
-      });
-      expect(mockSocialClient.getUserLikesCount).not.toHaveBeenCalled();
-    });
-
-    it('should return empty array if badge is already owned according to Redis cache', async () => {
-      const badge = createSocialLikeBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      mockRedis.sismember.mockResolvedValue(1);
-
-      const result = await evaluator.evaluateSocialLikeBadge(
-        'user-1',
-        TRACE_CONTEXT,
-      );
-
-      expect(result).toEqual([]);
-      expect(mockRedis.sismember).toHaveBeenCalledWith(
-        'badges:owned:user-1',
-        'SOCIAL_LIKE_COUNT_10',
-      );
-      expect(
-        mockEnv.repositories.userBadgeRepo.findOneBy,
-      ).not.toHaveBeenCalled();
-      expect(mockSocialClient.getUserLikesCount).not.toHaveBeenCalled();
-    });
-
-    it('should return empty array and update Redis cache if badge is already owned in DB', async () => {
-      const badge = createSocialLikeBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      mockRedis.sismember.mockResolvedValue(0);
-      mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue({
-        userId: 'user-1',
-        badgeId: badge.id,
-      });
-
-      const result = await evaluator.evaluateSocialLikeBadge(
-        'user-1',
-        TRACE_CONTEXT,
-      );
-
-      expect(result).toEqual([]);
-      expect(mockRedis.sadd).toHaveBeenCalledWith(
-        'badges:owned:user-1',
-        'SOCIAL_LIKE_COUNT_10',
-      );
-      expect(mockSocialClient.getUserLikesCount).not.toHaveBeenCalled();
-    });
-
-    it('should throw error if socialClient is not configured', async () => {
-      const badge = createSocialLikeBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      const unconfiguredEvaluator = new BadgeEvaluator(mockEnv.dataSource);
-
-      await expect(
-        unconfiguredEvaluator.evaluateSocialLikeBadge('user-1', TRACE_CONTEXT),
-      ).rejects.toThrow('SocialClient is not configured in BadgeEvaluator');
-    });
-
-    it('should return empty array if user has fewer than 10 likes', async () => {
-      const badge = createSocialLikeBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      mockRedis.sismember.mockResolvedValue(0);
+      postAuthorResolver = createMockPostAuthorResolver();
+      postAuthorResolver.getPostAuthorId.mockResolvedValue('author-1');
       mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue(null);
-      mockSocialClient.getUserLikesCount.mockResolvedValue(9);
-
-      const result = await evaluator.evaluateSocialLikeBadge(
-        'user-1',
-        TRACE_CONTEXT,
-      );
-
-      expect(result).toEqual([]);
-      expect(mockSocialClient.getUserLikesCount).toHaveBeenCalledWith('user-1');
-      expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
-    });
-
-    it('should award badge and emit outbox event when user has 10 or more likes', async () => {
-      const badge = createSocialLikeBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      mockRedis.sismember.mockResolvedValue(0);
-      mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue(null);
-      mockSocialClient.getUserLikesCount.mockResolvedValue(10);
-      mockEnv.queryBuilder.execute.mockResolvedValue({
-        raw: [{ badge_id: badge.id }],
-      });
       mockEnv.repositories.eventQueueRepo.save.mockResolvedValue({});
+      evaluator = buildEvaluator();
+    });
 
-      const result = await evaluator.evaluateSocialLikeBadge('user-1', {
-        correlationId: 'corr-like',
-        traceId: 'trace-like',
-        traceparent: SOURCE_TRACEPARENT,
+    describe('evaluateSocialLikeBadge', () => {
+      beforeEach(() => {
+        mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(
+          createSocialLikeBadgeModel(),
+        );
       });
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        id: badge.id,
-        name: badge.name,
-        slug: badge.slug,
-        description: badge.description,
-        iconPath: badge.iconPath,
-      });
+      it('should return empty array if badge SOCIAL_LIKE_COUNT_10 not found in DB', async () => {
+        mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(null);
 
-      expect(mockEnv.dataSource.transaction).toHaveBeenCalled();
-      expect(mockEnv.repositories.eventQueueRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: UserEventMessagingType.USER_BADGE_AWARDED,
-          emitter: 'post-processor-user',
-          emitterId: 'user-1',
-          correlationId: 'corr-like',
-          traceId: 'trace-like',
-          traceparent: SOURCE_TRACEPARENT,
-          targetServices: [Streams.USER_BADGE_AWARDED],
-        }),
-        undefined,
-      );
-      expect(mockRedis.sadd).toHaveBeenCalledWith(
-        'badges:owned:user-1',
-        'SOCIAL_LIKE_COUNT_10',
-      );
-    });
-  });
-
-  describe('evaluateEventWishlistBadge', () => {
-    let mockSocialClient: ReturnType<typeof createMockSocialInteractionClient>;
-    let mockRedis: jest.Mocked<Redis>;
-
-    beforeEach(() => {
-      mockSocialClient = createMockSocialInteractionClient();
-      mockRedis = createMock<Redis>();
-      evaluator = new BadgeEvaluator(
-        mockEnv.dataSource,
-        mockSocialClient,
-        mockRedis,
-      );
-
-      const mockLogger = {
-        log: jest.fn(),
-        info: jest.fn(),
-        warn: jest.fn(),
-        error: jest.fn(),
-        debug: jest.fn(),
-      };
-      Object.defineProperty(evaluator, 'logger', { value: mockLogger });
-    });
-
-    it('should return empty array if badge EVENT_WISHLIST_COUNT_10 does not exist in DB', async () => {
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(null);
-
-      const result = await evaluator.evaluateEventWishlistBadge(
-        'user-1',
-        TRACE_CONTEXT,
-      );
-
-      expect(result).toEqual([]);
-      expect(mockEnv.repositories.badgeRepo.findOneBy).toHaveBeenCalledWith({
-        slug: 'EVENT_WISHLIST_COUNT_10',
-      });
-      expect(mockSocialClient.getUserWishEventsCount).not.toHaveBeenCalled();
-      expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
-    });
-
-    it('should return empty array and skip DB/client if user already owns the badge in Redis cache', async () => {
-      const badge = createEventWishlistBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      mockRedis.sismember.mockResolvedValue(1);
-
-      const result = await evaluator.evaluateEventWishlistBadge(
-        'user-1',
-        TRACE_CONTEXT,
-      );
-
-      expect(result).toEqual([]);
-      expect(mockRedis.sismember).toHaveBeenCalledWith(
-        'badges:owned:user-1',
-        'EVENT_WISHLIST_COUNT_10',
-      );
-      expect(
-        mockEnv.repositories.userBadgeRepo.findOneBy,
-      ).not.toHaveBeenCalled();
-      expect(mockSocialClient.getUserWishEventsCount).not.toHaveBeenCalled();
-    });
-
-    it('should return empty array and update Redis cache if badge is already owned in DB', async () => {
-      const badge = createEventWishlistBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      mockRedis.sismember.mockResolvedValue(0);
-      mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue({
-        userId: 'user-1',
-        badgeId: badge.id,
-      });
-
-      const result = await evaluator.evaluateEventWishlistBadge(
-        'user-1',
-        TRACE_CONTEXT,
-      );
-
-      expect(result).toEqual([]);
-      expect(mockRedis.sadd).toHaveBeenCalledWith(
-        'badges:owned:user-1',
-        'EVENT_WISHLIST_COUNT_10',
-      );
-      expect(mockSocialClient.getUserWishEventsCount).not.toHaveBeenCalled();
-    });
-
-    it('should throw error if socialClient is not configured', async () => {
-      const badge = createEventWishlistBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      const unconfiguredEvaluator = new BadgeEvaluator(mockEnv.dataSource);
-
-      await expect(
-        unconfiguredEvaluator.evaluateEventWishlistBadge(
+        const result = await evaluator.evaluateSocialLikeBadge(
           'user-1',
           TRACE_CONTEXT,
-        ),
-      ).rejects.toThrow('SocialClient is not configured in BadgeEvaluator');
+          'post-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(mockEnv.repositories.badgeRepo.findOneBy).toHaveBeenCalledWith({
+          slug: 'SOCIAL_LIKE_COUNT_10',
+        });
+        expect(postAuthorResolver.getPostAuthorId).not.toHaveBeenCalled();
+      });
+
+      it('should skip the author lookup if the badge is already owned according to Redis', async () => {
+        mockRedis.sismember.mockResolvedValue(1);
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'post-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(postAuthorResolver.getPostAuthorId).not.toHaveBeenCalled();
+        expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
+      });
+
+      it('should update the Redis cache and skip the lookup if the badge is already owned in DB', async () => {
+        const badge = createSocialLikeBadgeModel();
+        mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue({
+          userId: 'user-1',
+          badgeId: badge.id,
+        });
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'post-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(mockRedis.sadd).toHaveBeenCalledWith(
+          'badges:owned:user-1',
+          'SOCIAL_LIKE_COUNT_10',
+        );
+        expect(postAuthorResolver.getPostAuthorId).not.toHaveBeenCalled();
+      });
+
+      it('should throw if the post author resolver is not configured', async () => {
+        const unconfigured = new BadgeEvaluator(mockEnv.dataSource);
+
+        await expect(
+          unconfigured.evaluateSocialLikeBadge(
+            'user-1',
+            TRACE_CONTEXT,
+            'post-1',
+          ),
+        ).rejects.toThrow(
+          'PostAuthorResolver is not configured in BadgeEvaluator',
+        );
+      });
+
+      it('should not count the like if the post no longer exists', async () => {
+        postAuthorResolver.getPostAuthorId.mockResolvedValue(undefined);
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'post-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
+      });
+
+      it('should not count a like on the user own post', async () => {
+        postAuthorResolver.getPostAuthorId.mockResolvedValue('user-1');
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'post-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(postAuthorResolver.getPostAuthorId).toHaveBeenCalledWith(
+          'post-1',
+        );
+        expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
+      });
+
+      it('should propagate an author lookup failure so the message is retried', async () => {
+        postAuthorResolver.getPostAuthorId.mockRejectedValue(
+          new Error('ms-post unavailable'),
+        );
+
+        await expect(
+          evaluator.evaluateSocialLikeBadge('user-1', TRACE_CONTEXT, 'post-1'),
+        ).rejects.toThrow('ms-post unavailable');
+        expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
+      });
+
+      it('should not increment the counter again for a like already counted', async () => {
+        mockInserts('conflict');
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'post-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(
+          mockEnv.repositories.badgeProgressRepo.save,
+        ).not.toHaveBeenCalled();
+        expect(mockEnv.queryBuilder.execute).toHaveBeenCalledTimes(1);
+      });
+
+      it('should count the like without awarding below 10 likes', async () => {
+        mockInserts('new');
+        mockCounterAt(9);
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'post-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(
+          mockEnv.repositories.badgeProgressRepo.save,
+        ).toHaveBeenCalledWith(expect.objectContaining({ value: 9 }));
+        expect(mockEnv.queryBuilder.execute).toHaveBeenCalledTimes(1);
+        expect(mockEnv.repositories.eventQueueRepo.save).not.toHaveBeenCalled();
+      });
+
+      it('should award the badge and emit one outbox event at the 10th distinct like', async () => {
+        const badge = createSocialLikeBadgeModel();
+        mockInserts('new', 'new');
+        mockCounterAt(10);
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          {
+            correlationId: 'corr-like',
+            traceId: 'trace-like',
+            traceparent: SOURCE_TRACEPARENT,
+          },
+          'post-1',
+        );
+
+        expect(result).toEqual([
+          {
+            id: badge.id,
+            name: badge.name,
+            slug: badge.slug,
+            description: badge.description,
+            iconPath: badge.iconPath,
+          },
+        ]);
+        expect(mockEnv.repositories.eventQueueRepo.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: UserEventMessagingType.USER_BADGE_AWARDED,
+            emitter: 'post-processor-user',
+            emitterId: 'user-1',
+            correlationId: 'corr-like',
+            targetServices: [Streams.USER_BADGE_AWARDED],
+          }),
+          undefined,
+        );
+        expect(mockEnv.manager.increment).not.toHaveBeenCalled();
+        expect(mockRedis.sadd).toHaveBeenCalledWith(
+          'badges:owned:user-1',
+          'SOCIAL_LIKE_COUNT_10',
+        );
+      });
+
+      it('should credit the badge points in the same transaction when points are enabled', async () => {
+        evaluator = buildEvaluator(true);
+        mockInserts('new', 'new', 'new');
+        mockCounterAt(10);
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'post-1',
+        );
+
+        expect(result[0]).toMatchObject({
+          slug: 'SOCIAL_LIKE_COUNT_10',
+          points: 100,
+        });
+        expect(mockEnv.queryBuilder.execute).toHaveBeenCalledTimes(3);
+        expect(mockEnv.queryBuilder.values).toHaveBeenCalledWith(
+          expect.objectContaining({
+            userId: 'user-1',
+            points: 100,
+            formulaVersion: 1,
+          }),
+        );
+        expect(mockEnv.manager.increment).toHaveBeenCalledWith(
+          UserModel,
+          { id: 'user-1' },
+          'totalImpactScore',
+          100,
+        );
+        expect(mockEnv.dataSource.transaction).toHaveBeenCalledTimes(1);
+      });
+
+      it('should not credit points twice when the credit row already exists', async () => {
+        evaluator = buildEvaluator(true);
+        mockInserts('new', 'new', 'conflict');
+        mockCounterAt(10);
+
+        const result = await evaluator.evaluateSocialLikeBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'post-1',
+        );
+
+        expect(result[0]?.points).toBeUndefined();
+        expect(mockEnv.manager.increment).not.toHaveBeenCalled();
+      });
+
+      it('should leave Redis untouched when the transaction is rolled back', async () => {
+        mockEnv.dataSource.transaction.mockRejectedValueOnce(
+          new Error('rollback'),
+        );
+
+        await expect(
+          evaluator.evaluateSocialLikeBadge('user-1', TRACE_CONTEXT, 'post-1'),
+        ).rejects.toThrow('rollback');
+        expect(mockRedis.sadd).not.toHaveBeenCalled();
+      });
     });
 
-    it('should return empty array if user has fewer than 10 wish events', async () => {
-      const badge = createEventWishlistBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      mockRedis.sismember.mockResolvedValue(0);
-      mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue(null);
-      mockSocialClient.getUserWishEventsCount.mockResolvedValue(9);
-
-      const result = await evaluator.evaluateEventWishlistBadge(
-        'user-1',
-        TRACE_CONTEXT,
-      );
-
-      expect(result).toEqual([]);
-      expect(mockSocialClient.getUserWishEventsCount).toHaveBeenCalledWith(
-        'user-1',
-      );
-      expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
-    });
-
-    it('should award badge and emit outbox event when user has 10 or more wish events', async () => {
-      const badge = createEventWishlistBadgeModel();
-      mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(badge);
-      mockRedis.sismember.mockResolvedValue(0);
-      mockEnv.repositories.userBadgeRepo.findOneBy.mockResolvedValue(null);
-      mockSocialClient.getUserWishEventsCount.mockResolvedValue(10);
-      mockEnv.queryBuilder.execute.mockResolvedValue({
-        raw: [{ badge_id: badge.id }],
-      });
-      mockEnv.repositories.eventQueueRepo.save.mockResolvedValue({});
-
-      const result = await evaluator.evaluateEventWishlistBadge('user-1', {
-        correlationId: 'corr-wish',
-        traceId: 'trace-wish',
-        traceparent: SOURCE_TRACEPARENT,
+    describe('evaluateEventWishlistBadge', () => {
+      beforeEach(() => {
+        mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(
+          createEventWishlistBadgeModel(),
+        );
       });
 
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
-        id: badge.id,
-        name: badge.name,
-        slug: badge.slug,
-        description: badge.description,
-        iconPath: badge.iconPath,
+      it('should return empty array if badge EVENT_WISHLIST_COUNT_10 does not exist in DB', async () => {
+        mockEnv.repositories.badgeRepo.findOneBy.mockResolvedValue(null);
+
+        const result = await evaluator.evaluateEventWishlistBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'event-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
       });
 
-      expect(mockEnv.dataSource.transaction).toHaveBeenCalled();
-      expect(mockEnv.repositories.eventQueueRepo.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          type: UserEventMessagingType.USER_BADGE_AWARDED,
-          emitter: 'post-processor-user',
-          emitterId: 'user-1',
-          correlationId: 'corr-wish',
-          traceId: 'trace-wish',
-          traceparent: SOURCE_TRACEPARENT,
-          targetServices: [Streams.USER_BADGE_AWARDED],
-        }),
-        undefined,
-      );
-      expect(mockRedis.sadd).toHaveBeenCalledWith(
-        'badges:owned:user-1',
-        'EVENT_WISHLIST_COUNT_10',
-      );
+      it('should skip counting if the user already owns the badge in Redis cache', async () => {
+        mockRedis.sismember.mockResolvedValue(1);
+
+        const result = await evaluator.evaluateEventWishlistBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'event-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(mockRedis.sismember).toHaveBeenCalledWith(
+          'badges:owned:user-1',
+          'EVENT_WISHLIST_COUNT_10',
+        );
+        expect(mockEnv.dataSource.transaction).not.toHaveBeenCalled();
+      });
+
+      it('should not count the same event wished twice', async () => {
+        mockInserts('conflict');
+
+        const result = await evaluator.evaluateEventWishlistBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'event-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(
+          mockEnv.repositories.badgeProgressRepo.save,
+        ).not.toHaveBeenCalled();
+      });
+
+      it('should count the wish without awarding below 10 wishes', async () => {
+        mockInserts('new');
+        mockCounterAt(9);
+
+        const result = await evaluator.evaluateEventWishlistBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'event-1',
+        );
+
+        expect(result).toEqual([]);
+        expect(mockEnv.repositories.eventQueueRepo.save).not.toHaveBeenCalled();
+      });
+
+      it('should award the badge and emit an outbox event at the 10th distinct wish', async () => {
+        const badge = createEventWishlistBadgeModel();
+        mockInserts('new', 'new');
+        mockCounterAt(10);
+
+        const result = await evaluator.evaluateEventWishlistBadge(
+          'user-1',
+          TRACE_CONTEXT,
+          'event-1',
+        );
+
+        expect(result).toHaveLength(1);
+        expect(result[0]).toEqual({
+          id: badge.id,
+          name: badge.name,
+          slug: badge.slug,
+          description: badge.description,
+          iconPath: badge.iconPath,
+        });
+        expect(mockEnv.repositories.eventQueueRepo.save).toHaveBeenCalledWith(
+          expect.objectContaining({
+            type: UserEventMessagingType.USER_BADGE_AWARDED,
+            targetServices: [Streams.USER_BADGE_AWARDED],
+          }),
+          undefined,
+        );
+        expect(mockRedis.sadd).toHaveBeenCalledWith(
+          'badges:owned:user-1',
+          'EVENT_WISHLIST_COUNT_10',
+        );
+      });
     });
   });
 
