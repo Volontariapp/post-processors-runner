@@ -83,10 +83,14 @@ export class EventCreatedPostProcessor extends BatchPostProcessor<EventEventMess
       try {
         await this.participationService.createEventsBatch(neo4jBatch);
       } catch (error) {
+        // Rethrown on purpose: swallowing it acknowledged the message and lost the SocialEvent node
+        // for good. BatchPostProcessor retries the batch with backoff, then sends it to the DLQ.
+        // Safe to replay: the cypher is MERGE based and nothing was emitted before this point.
         this.logger.error(
-          'Error processing EVENT_CREATED batch in Neo4j',
+          'Error processing EVENT_CREATED batch in Neo4j, the batch will be retried',
           error,
         );
+        throw error;
       }
 
       // Checked after the creation, see tombstone.ts (G4): an event.deleted processed in between
