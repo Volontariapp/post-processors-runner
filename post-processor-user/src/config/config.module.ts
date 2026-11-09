@@ -1,12 +1,12 @@
 import { Module, Global } from '@nestjs/common';
-import { loadConfig } from '@volontariapp/config';
+import { configureLogger, loadConfig } from '@volontariapp/config';
 import { Logger } from '@volontariapp/logger';
 import { CustomConfig } from './custom-config.js';
 import { resolveConfigDirectory } from './resolve-config-directory.js';
 
 const configDir = resolveConfigDirectory();
 export const config = loadConfig(configDir, CustomConfig);
-Logger.setDefaultConfig({ format: config.logger.format });
+configureLogger(config.logger);
 export const logger = new Logger({
   context: 'POST-PROCESSOR-USER',
   format: config.logger.format,
