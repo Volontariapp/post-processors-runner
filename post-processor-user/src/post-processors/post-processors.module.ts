@@ -46,10 +46,12 @@ import { PostLikedBadgePostProcessor } from './posts/post-liked-badge.post-proce
 import { UserDeletionSuccessPostProcessor } from './users/user-deletion-success.post-processor.js';
 import { DomainUserModule } from '../domain/domain-user.module.js';
 import { UserService } from '@volontariapp/domain-user';
+import { PostProcessorRegistry } from './post-processor-registry.service.js';
 
 @Module({
   imports: [DomainUserModule],
   providers: [
+    PostProcessorRegistry,
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
     eventCreationSuccessfullBadgeOptionsProvider,
@@ -105,21 +107,25 @@ import { UserService } from '@volontariapp/domain-user';
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxSuccessPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxSuccessPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         JOB_OUTBOX_SUCCESS_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -128,21 +134,25 @@ import { UserService } from '@volontariapp/domain-user';
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxFailedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxFailedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         JOB_OUTBOX_FAILED_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -152,22 +162,26 @@ import { UserService } from '@volontariapp/domain-user';
         redisProvider: RedisProvider,
         badgeEvaluator: BadgeEvaluator,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new EventCreationSuccessfullBadgePostProcessor(
-          badgeEvaluator,
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new EventCreationSuccessfullBadgePostProcessor(
+              badgeEvaluator,
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         BadgeEvaluator,
         EVENT_CREATION_SUCCESSFULL_BADGE_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -177,22 +191,26 @@ import { UserService } from '@volontariapp/domain-user';
         redisProvider: RedisProvider,
         badgeEvaluator: BadgeEvaluator,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new PostCreationSuccessfullBadgePostProcessor(
-          badgeEvaluator,
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new PostCreationSuccessfullBadgePostProcessor(
+              badgeEvaluator,
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         BadgeEvaluator,
         POST_CREATION_SUCCESSFULL_BADGE_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -201,20 +219,24 @@ import { UserService } from '@volontariapp/domain-user';
         redisProvider: RedisProvider,
         badgeEvaluator: BadgeEvaluator,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new PostLikedBadgePostProcessor(
-          badgeEvaluator,
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new PostLikedBadgePostProcessor(
+              badgeEvaluator,
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         BadgeEvaluator,
         POST_LIKED_BADGE_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -223,20 +245,24 @@ import { UserService } from '@volontariapp/domain-user';
         redisProvider: RedisProvider,
         badgeEvaluator: BadgeEvaluator,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new EventSocialWishedBadgePostProcessor(
-          badgeEvaluator,
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new EventSocialWishedBadgePostProcessor(
+              badgeEvaluator,
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         BadgeEvaluator,
         EVENT_SOCIAL_WISHED_BADGE_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -245,20 +271,24 @@ import { UserService } from '@volontariapp/domain-user';
         redisProvider: RedisProvider,
         badgeEvaluator: BadgeEvaluator,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new EventFinishedBadgePostProcessor(
-          badgeEvaluator,
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new EventFinishedBadgePostProcessor(
+              badgeEvaluator,
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         BadgeEvaluator,
         EVENT_FINISHED_BADGE_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -267,20 +297,24 @@ import { UserService } from '@volontariapp/domain-user';
         redisProvider: RedisProvider,
         impactScoreCrediter: ImpactScoreCrediter,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new EventFinishedImpactScorePostProcessor(
-          impactScoreCrediter,
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new EventFinishedImpactScorePostProcessor(
+              impactScoreCrediter,
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         ImpactScoreCrediter,
         EVENT_FINISHED_IMPACT_SCORE_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     userDeletionSuccessOptionsProvider,
@@ -290,20 +324,24 @@ import { UserService } from '@volontariapp/domain-user';
         redisProvider: RedisProvider,
         userService: UserService,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new UserDeletionSuccessPostProcessor(
-          userService,
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new UserDeletionSuccessPostProcessor(
+              userService,
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         UserService,
         USER_DELETION_SUCCESS_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
   ],

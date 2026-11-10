@@ -21,25 +21,15 @@ async function bootstrap() {
     'NestJS Application Context successfully initialized and running.',
   );
 
+  // NestJS owns SIGTERM and SIGINT: app.close() awaits every post-processor (the registry
+  // stops them in onModuleDestroy) before the Redis and Postgres connections close.
+  app.enableShutdownHooks();
+
   await app.listen(port);
 
   logger.info('Post-processor-social is now listening to events', {
     streamName: config.postProcessor.streamName,
     groupName: config.postProcessor.groupName,
-  });
-
-  const shutdown = async (signal: string) => {
-    logger.info(`${signal} received, closing NestJS context...`);
-    await app.close();
-    logger.info('Shutdown complete.');
-    process.exit(0);
-  };
-
-  process.on('SIGTERM', () => {
-    void shutdown('SIGTERM');
-  });
-  process.on('SIGINT', () => {
-    void shutdown('SIGINT');
   });
 }
 

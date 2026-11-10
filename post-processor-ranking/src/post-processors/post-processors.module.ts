@@ -47,10 +47,12 @@ import {
   USER_CREATED_OPTIONS,
   USER_DELETED_OPTIONS,
 } from './options/index.js';
+import { PostProcessorRegistry } from './post-processor-registry.service.js';
 
 @Module({
   imports: [DomainRankingModule, TypeOrmModule.forFeature([EventQueueModel])],
   providers: [
+    PostProcessorRegistry,
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
     ...rankingOptionsProviders,
@@ -94,21 +96,25 @@ import {
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxSuccessPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxSuccessPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         JOB_OUTBOX_SUCCESS_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -117,21 +123,25 @@ import {
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxFailedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxFailedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         JOB_OUTBOX_FAILED_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
   ],
