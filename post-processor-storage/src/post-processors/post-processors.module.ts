@@ -41,10 +41,12 @@ import { EventCoverReplacedPostProcessor } from './event-cover-replaced.post-pro
 import { UserAvatarReplacedPostProcessor } from './user-avatar-replaced.post-processor.js';
 import { PostDeletedPostProcessor } from './post-deleted.post-processor.js';
 import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
+import { PostProcessorRegistry } from './post-processor-registry.service.js';
 
 @Module({
   imports: [DomainStorageModule, TypeOrmModule.forFeature([EventQueueModel])],
   providers: [
+    PostProcessorRegistry,
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
     userDeletedOptionsProvider,
@@ -60,21 +62,25 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxSuccessPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxSuccessPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         JOB_OUTBOX_SUCCESS_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -83,21 +89,25 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxFailedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxFailedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         JOB_OUTBOX_FAILED_POST_PROCESSOR_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -107,22 +117,26 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         options: PostProcessorOptions,
         fileRepository: PostgresFileRepository,
         typeormRepository: Repository<EventQueueModel>,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new UserDeletedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          fileRepository,
-          typeormRepository,
+          (launchOptions) =>
+            new UserDeletedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              fileRepository,
+              typeormRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_USER_DELETED_OPTIONS,
         PostgresFileRepository,
         getRepositoryToken(EventQueueModel),
+        PostProcessorRegistry,
       ],
     },
     {
@@ -131,20 +145,24 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         fileRepository: PostgresFileRepository,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new PostCreatedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          fileRepository,
+          (launchOptions) =>
+            new PostCreatedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              fileRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_POST_CREATED_OPTIONS,
         PostgresFileRepository,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -153,20 +171,24 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         fileRepository: PostgresFileRepository,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new EventCreatedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          fileRepository,
+          (launchOptions) =>
+            new EventCreatedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              fileRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_EVENT_CREATED_OPTIONS,
         PostgresFileRepository,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -175,20 +197,24 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         fileRepository: PostgresFileRepository,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new EventCoverReplacedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          fileRepository,
+          (launchOptions) =>
+            new EventCoverReplacedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              fileRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_EVENT_COVER_REPLACED_OPTIONS,
         PostgresFileRepository,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -197,20 +223,24 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         fileRepository: PostgresFileRepository,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new UserAvatarReplacedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          fileRepository,
+          (launchOptions) =>
+            new UserAvatarReplacedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              fileRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_USER_AVATAR_REPLACED_OPTIONS,
         PostgresFileRepository,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -219,20 +249,24 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         fileRepository: PostgresFileRepository,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new PostDeletedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          fileRepository,
+          (launchOptions) =>
+            new PostDeletedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              fileRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_POST_DELETED_OPTIONS,
         PostgresFileRepository,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -241,20 +275,24 @@ import { EventDeletedPostProcessor } from './event-deleted.post-processor.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         fileRepository: PostgresFileRepository,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new EventDeletedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          fileRepository,
+          (launchOptions) =>
+            new EventDeletedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              fileRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_EVENT_DELETED_OPTIONS,
         PostgresFileRepository,
+        PostProcessorRegistry,
       ],
     },
   ],

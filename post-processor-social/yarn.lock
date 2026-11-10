@@ -3954,9 +3954,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@volontariapp/post-processors@npm:^3.5.16":
-  version: 3.5.16
-  resolution: "@volontariapp/post-processors@npm:3.5.16"
+"@volontariapp/post-processors@npm:^3.6.0":
+  version: 3.6.0
+  resolution: "@volontariapp/post-processors@npm:3.6.0"
   dependencies:
     "@volontariapp/database": "npm:3.13.2"
     "@volontariapp/errors": "npm:0.7.1"
@@ -3969,7 +3969,7 @@ __metadata:
   peerDependencies:
     "@nestjs/common": ^11.2.8
     ioredis: ^5.0.0
-  checksum: 10c0/2654d8e1fd2093a923439496543493bfcc7d22b8bc6216e5c5dddbd05e2ea4d67490b4e4eb7b4943cb90019f4803b0cd44c97a91e1503bdb49fa02e382bb2bff
+  checksum: 10c0/f92e17c786fc11a9aff4855403c9617bf898350c1818badf232788830a04b33826666fb257259130264c764dd05a39d1a9e197909851b46e1532335c4d6fb0f5
   languageName: node
   linkType: hard
 
@@ -8160,7 +8160,7 @@ __metadata:
     "@volontariapp/messaging": "npm:^2.34.7"
     "@volontariapp/monitoring": "npm:^2.5.1"
     "@volontariapp/outbox": "npm:^0.10.44"
-    "@volontariapp/post-processors": "npm:^3.5.16"
+    "@volontariapp/post-processors": "npm:^3.6.0"
     "@volontariapp/shared": "npm:0.20.0"
     "@volontariapp/testing": "npm:^1.0.3"
     axios: "npm:^1.21.0"

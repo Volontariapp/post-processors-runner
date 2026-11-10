@@ -42,9 +42,12 @@ import {
   postCreatedOptionsProvider,
   postDeletedOptionsProvider,
 } from './options/index.js';
+import { PostProcessorRegistry } from './post-processor-registry.service.js';
+
 @Module({
   imports: [DomainSocialModule, TypeOrmModule.forFeature([EventQueueModel])],
   providers: [
+    PostProcessorRegistry,
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
     eventCreatedOptionsProvider,
@@ -59,21 +62,25 @@ import {
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxSuccessPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxSuccessPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_JOB_OUTBOX_SUCCESS_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -82,21 +89,25 @@ import {
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxFailedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxFailedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -106,22 +117,26 @@ import {
         options: PostProcessorOptions,
         participationService: ParticipationService,
         typeormRepository: Repository<EventQueueModel>,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new EventCreatedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          participationService,
-          typeormRepository,
+          (launchOptions) =>
+            new EventCreatedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              participationService,
+              typeormRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_EVENT_CREATED_OPTIONS,
         ParticipationService,
         getRepositoryToken(EventQueueModel),
+        PostProcessorRegistry,
       ],
     },
     {
@@ -131,22 +146,26 @@ import {
         options: PostProcessorOptions,
         participationService: ParticipationService,
         typeormRepository: Repository<EventQueueModel>,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new EventDeletedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          participationService,
-          typeormRepository,
+          (launchOptions) =>
+            new EventDeletedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              participationService,
+              typeormRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_EVENT_DELETED_OPTIONS,
         ParticipationService,
         getRepositoryToken(EventQueueModel),
+        PostProcessorRegistry,
       ],
     },
     {
@@ -156,22 +175,26 @@ import {
         options: PostProcessorOptions,
         socialUserService: SocialUserService,
         typeormRepository: Repository<EventQueueModel>,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new UserCreatedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          socialUserService,
-          typeormRepository,
+          (launchOptions) =>
+            new UserCreatedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              socialUserService,
+              typeormRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_USER_CREATED_OPTIONS,
         SocialUserService,
         getRepositoryToken(EventQueueModel),
+        PostProcessorRegistry,
       ],
     },
     {
@@ -181,22 +204,26 @@ import {
         options: PostProcessorOptions,
         socialUserService: SocialUserService,
         typeormRepository: Repository<EventQueueModel>,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new UserDeletedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          socialUserService,
-          typeormRepository,
+          (launchOptions) =>
+            new UserDeletedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              socialUserService,
+              typeormRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_USER_DELETED_OPTIONS,
         SocialUserService,
         getRepositoryToken(EventQueueModel),
+        PostProcessorRegistry,
       ],
     },
     {
@@ -206,22 +233,26 @@ import {
         options: PostProcessorOptions,
         publicationService: PublicationService,
         typeormRepository: Repository<EventQueueModel>,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new PostCreatedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          publicationService,
-          typeormRepository,
+          (launchOptions) =>
+            new PostCreatedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              publicationService,
+              typeormRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_POST_CREATED_OPTIONS,
         PublicationService,
         getRepositoryToken(EventQueueModel),
+        PostProcessorRegistry,
       ],
     },
     {
@@ -231,22 +262,26 @@ import {
         options: PostProcessorOptions,
         publicationService: PublicationService,
         typeormRepository: Repository<EventQueueModel>,
+        registry: PostProcessorRegistry,
       ) => {
         await redisProvider.connect();
-        const postProcessor = new PostDeletedPostProcessor(
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          publicationService,
-          typeormRepository,
+          (launchOptions) =>
+            new PostDeletedPostProcessor(
+              redisProvider.getDriver(),
+              launchOptions,
+              publicationService,
+              typeormRepository,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestRedisProvider,
         POST_PROCESSOR_POST_DELETED_OPTIONS,
         PublicationService,
         getRepositoryToken(EventQueueModel),
+        PostProcessorRegistry,
       ],
     },
   ],

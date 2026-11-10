@@ -37,9 +37,11 @@ import { UserDeletedPostProcessor } from './user-deleted.post-processor.js';
 import { StorageFileScannedPostProcessor } from './storage-file-scanned.post-processor.js';
 import { StorageFileRejectedPostProcessor } from './storage-file-rejected.post-processor.js';
 import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rejected.post-processor.js';
+import { PostProcessorRegistry } from './post-processor-registry.service.js';
 
 @Module({
   providers: [
+    PostProcessorRegistry,
     postProcessorsJobOutboxSuccessOptionsProvider,
     postProcessorsJobOutboxFailureOptionsProvider,
     postProcessorsEventCreatedOptionsProvider,
@@ -55,21 +57,25 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxSuccessPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxSuccessPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_JOB_OUTBOX_SUCCESS_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -78,21 +84,25 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new JobOutboxFailedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new JobOutboxFailedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_JOB_OUTBOX_FAILURE_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -102,23 +112,27 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         customConfig: CustomConfig,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new EventCreatedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
-          customConfig.geocoding.enabled,
+          (launchOptions) =>
+            new EventCreatedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+              customConfig.geocoding.enabled,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_EVENT_CREATED_OPTIONS,
         CustomConfig,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -127,21 +141,25 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new EventCreationFailedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new EventCreationFailedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_EVENT_CREATION_FAILED_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -150,21 +168,25 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new EventCreationSuccessfullPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new EventCreationSuccessfullPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_EVENT_CREATION_SUCCESSFULL_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -173,21 +195,25 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new UserDeletedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new UserDeletedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_USER_DELETED_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -196,21 +222,25 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new StorageFileScannedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new StorageFileScannedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_STORAGE_FILE_SCANNED_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -219,21 +249,25 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new StorageFileRejectedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new StorageFileRejectedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_STORAGE_FILE_REJECTED_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
     {
@@ -242,21 +276,25 @@ import { StorageAttachmentRejectedPostProcessor } from './storage-attachment-rej
         dbProvider: PostgresProvider,
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
+        registry: PostProcessorRegistry,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
-        const postProcessor = new StorageAttachmentRejectedPostProcessor(
-          dbProvider.getDriver(),
-          redisProvider.getDriver(),
+        return registry.launch(
           options,
+          (launchOptions) =>
+            new StorageAttachmentRejectedPostProcessor(
+              dbProvider.getDriver(),
+              redisProvider.getDriver(),
+              launchOptions,
+            ),
         );
-        void postProcessor.start();
-        return postProcessor;
       },
       inject: [
         NestPostgresProvider,
         NestRedisProvider,
         POST_PROCESSORS_STORAGE_ATTACHMENT_REJECTED_OPTIONS,
+        PostProcessorRegistry,
       ],
     },
   ],
