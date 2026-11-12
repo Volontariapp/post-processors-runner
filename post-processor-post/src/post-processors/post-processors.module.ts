@@ -13,7 +13,11 @@ import { getRepositoryToken, TypeOrmModule } from '@nestjs/typeorm';
 import { EventQueueModel } from '@volontariapp/database';
 import type { Repository } from 'typeorm';
 import { DomainPostModule } from '../domain/domain-post.module.js';
-import { PostService, CommentService } from '@volontariapp/domain-post';
+import {
+  PostService,
+  CommentService,
+  PostgresPostRepository,
+} from '@volontariapp/domain-post';
 import {
   postProcessorsJobOutboxFailureOptionsProvider,
   postProcessorsJobOutboxSuccessOptionsProvider,
@@ -137,6 +141,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         registry: PostProcessorRegistry,
+        postRepository: PostgresPostRepository,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
@@ -147,6 +152,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
               dbProvider.getDriver(),
               redisProvider.getDriver(),
               launchOptions,
+              postRepository,
             ),
         );
       },
@@ -155,6 +161,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
         NestRedisProvider,
         POST_PROCESSORS_STORAGE_FILE_SCANNED_OPTIONS,
         PostProcessorRegistry,
+        PostgresPostRepository,
       ],
     },
     {
@@ -164,6 +171,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         registry: PostProcessorRegistry,
+        postRepository: PostgresPostRepository,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
@@ -174,6 +182,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
               dbProvider.getDriver(),
               redisProvider.getDriver(),
               launchOptions,
+              postRepository,
             ),
         );
       },
@@ -182,6 +191,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
         NestRedisProvider,
         POST_PROCESSORS_STORAGE_FILE_REJECTED_OPTIONS,
         PostProcessorRegistry,
+        PostgresPostRepository,
       ],
     },
     {
@@ -191,6 +201,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
         redisProvider: RedisProvider,
         options: PostProcessorOptions,
         registry: PostProcessorRegistry,
+        postRepository: PostgresPostRepository,
       ) => {
         await dbProvider.connect();
         await redisProvider.connect();
@@ -201,6 +212,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
               dbProvider.getDriver(),
               redisProvider.getDriver(),
               launchOptions,
+              postRepository,
             ),
         );
       },
@@ -209,6 +221,7 @@ import { PostProcessorRegistry } from './post-processor-registry.service.js';
         NestRedisProvider,
         POST_PROCESSORS_STORAGE_ATTACHMENT_REJECTED_OPTIONS,
         PostProcessorRegistry,
+        PostgresPostRepository,
       ],
     },
   ],
