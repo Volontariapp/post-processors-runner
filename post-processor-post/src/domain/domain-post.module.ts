@@ -20,6 +20,6 @@ import {
     PostService,
     CommentService,
   ],
-  exports: [PostService, CommentService],
+  exports: [PostService, CommentService, PostgresPostRepository],
 })
 export class DomainPostModule {}
